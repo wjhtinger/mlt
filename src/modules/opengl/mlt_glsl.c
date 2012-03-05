@@ -433,10 +433,8 @@ static glsl_pbo glsl_get_pbo( glsl_env g, int size )
 		glBindBuffer( GL_PIXEL_UNPACK_BUFFER_ARB, g->pbo->pbo );
 		glBufferData( GL_PIXEL_UNPACK_BUFFER_ARB, size, NULL, GL_STREAM_DRAW );
 		glBindBuffer( GL_PIXEL_UNPACK_BUFFER_ARB, 0 );
+		g->pbo->size = size;
 	}
-
-	
-	g->pbo->size = size;
 
 	return g->pbo;
 }
