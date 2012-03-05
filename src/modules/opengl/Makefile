@@ -25,10 +25,6 @@ OBJS = factory.o \
 
 CPPOBJS = qgl_wrapper.o
 
-qgl_wrapper.o: qgl_wrapper.moc
-qgl_wrapper.moc: qgl_wrapper.cpp
-	moc-qt4 $(DEFINES) $(INCPATH) -i $< -o $@
-
 CXXFLAGS += $(CFLAGS) $(QTCXXFLAGS) -Wno-deprecated
 
 LDFLAGS += $(QTLIBS)
@@ -36,6 +32,9 @@ LDFLAGS += $(QTLIBS)
 SRCS := $(OBJS:.o=.c) $(CPPOBJS:.o=.cpp)
 
 all: $(TARGET)
+qgl_wrapper.o: qgl_wrapper.moc
+qgl_wrapper.moc: qgl_wrapper.cpp
+	moc-qt4 $(DEFINES) $(INCPATH) -i $< -o $@
 
 $(TARGET): $(OBJS) $(CPPOBJS)
 		$(CXX) $(SHFLAGS) -o $@ $(OBJS) $(CPPOBJS) $(LDFLAGS)

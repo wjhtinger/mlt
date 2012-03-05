@@ -43,6 +43,7 @@ static int filter_get_image( mlt_frame frame, uint8_t **image, mlt_image_format 
 		return 1;
 	
 	int error = 0;
+	mlt_profile profile = mlt_frame_pop_service( frame );
 
 	// Get the properties from the frame
 	mlt_properties properties = MLT_FRAME_PROPERTIES( frame );
@@ -50,8 +51,8 @@ static int filter_get_image( mlt_frame frame, uint8_t **image, mlt_image_format 
 	// Correct Width/height if necessary
 	if ( *width == 0 || *height == 0 )
 	{
-		*width  = mlt_properties_get_int( properties, "normalised_width" );
-		*height = mlt_properties_get_int( properties, "normalised_height" );
+		*width  = profile->width;
+		*height = profile->height;
 	}
 
 	int left    = mlt_properties_get_int( properties, "crop.left" );
@@ -145,9 +146,10 @@ static int filter_get_image( mlt_frame frame, uint8_t **image, mlt_image_format 
 
 static mlt_frame filter_process( mlt_filter filter, mlt_frame frame )
 {
-	if ( mlt_properties_get_int( MLT_FILTER_PROPERTIES( filter ), "active" ) )
+ if ( mlt_properties_get_int( MLT_FILTER_PROPERTIES( filter ), "active" ) )
 	{
 		// Push the get_image method on to the stack
+		mlt_frame_push_service( frame, mlt_service_profile( MLT_FILTER_SERVICE( filter ) ) );
 		mlt_frame_push_get_image( frame, filter_get_image );
 	}
 	else
@@ -158,8 +160,8 @@ static mlt_frame filter_process( mlt_filter filter, mlt_frame frame )
 		int right  = mlt_properties_get_int( filter_props, "right" );
 		int top    = mlt_properties_get_int( filter_props, "top" );
 		int bottom = mlt_properties_get_int( filter_props, "bottom" );
-		int width  = mlt_properties_get_int( frame_props, "real_width" );
-		int height = mlt_properties_get_int( frame_props, "real_height" );
+		int width  = mlt_properties_get_int( frame_props, "meta.media.width" );
+		int height = mlt_properties_get_int( frame_props, "meta.media.height" );
 		int use_profile = mlt_properties_get_int( filter_props, "use_profile" );
 		mlt_profile profile = mlt_service_profile( MLT_FILTER_SERVICE( filter ) );
 
@@ -174,11 +176,11 @@ static mlt_frame filter_process( mlt_filter filter, mlt_frame frame )
 		{
 			double aspect_ratio = mlt_frame_get_aspect_ratio( frame );
 			if ( aspect_ratio == 0.0 )
-				aspect_ratio = mlt_properties_get_double( frame_props, "consumer_aspect_ratio" );
+				aspect_ratio = mlt_profile_sar( profile );
 			double input_ar = aspect_ratio * width / height;
 			double output_ar = mlt_profile_dar( mlt_service_profile( MLT_FILTER_SERVICE(filter) ) );
 			int bias = mlt_properties_get_int( filter_props, "center_bias" );
-			
+
 			if ( input_ar > output_ar )
 			{
 				left = right = ( width - rint( output_ar * height / aspect_ratio ) ) / 2;
@@ -199,16 +201,23 @@ static mlt_frame filter_process( mlt_filter filter, mlt_frame frame )
 				top -= bias;
 				bottom += bias;
 			}
-		}		
+		}
 
+		// Coerce the output to an even width because subsampled YUV with odd widths is too
+		// risky for downstream processing to handle correctly.
+		left += ( width - left - right ) & 1;
+		if ( width - left - right < 8 )
+			left = right = 0;
+		if ( height - top - bottom < 8 )
+			top = bottom = 0;
 		mlt_properties_set_int( frame_props, "crop.left", left );
 		mlt_properties_set_int( frame_props, "crop.right", right );
 		mlt_properties_set_int( frame_props, "crop.top", top );
 		mlt_properties_set_int( frame_props, "crop.bottom", bottom );
 		mlt_properties_set_int( frame_props, "crop.original_width", width );
 		mlt_properties_set_int( frame_props, "crop.original_height", height );
-		mlt_properties_set_int( frame_props, "real_width", width - left - right );
-		mlt_properties_set_int( frame_props, "real_height", height - top - bottom );
+		mlt_properties_set_int( frame_props, "meta.media.width", width - left - right );
+		mlt_properties_set_int( frame_props, "meta.media.height", height - top - bottom );
 	}
 	return frame;
 }

@@ -367,9 +367,6 @@ void VideoWidget::paintGL()
 		thread->start();
 		threadStarted = true;
 	}
-
-	fprintf(stderr, ".........................paintGL()\n");
-
 }
 
 #include "qgl_wrapper.moc"
