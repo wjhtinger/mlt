@@ -22,8 +22,12 @@ OBJS = factory.o \
 	filter_glsl_contrast.o \
 	filter_glsl_gamma.o \
 	transition_glsl_luma.o
-	
+
 CPPOBJS = qgl_wrapper.o
+
+qgl_wrapper.o: qgl_wrapper.moc
+qgl_wrapper.moc: qgl_wrapper.cpp
+	moc-qt4 $(DEFINES) $(INCPATH) -i $< -o $@
 
 CXXFLAGS += $(CFLAGS) $(QTCXXFLAGS) -Wno-deprecated
 
@@ -31,10 +35,7 @@ LDFLAGS += $(QTLIBS)
 
 SRCS := $(OBJS:.o=.c) $(CPPOBJS:.o=.cpp)
 
-all: 	$(TARGET)
-qgl_wrapper.o: mqgl_wrapper.cpp
-mqgl_wrapper.cpp: qgl_wrapper.cpp
-	moc-qt4 -i $< -o $@
+all: $(TARGET)
 
 $(TARGET): $(OBJS) $(CPPOBJS)
 		$(CXX) $(SHFLAGS) -o $@ $(OBJS) $(CPPOBJS) $(LDFLAGS)

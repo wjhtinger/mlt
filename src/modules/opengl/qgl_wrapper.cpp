@@ -372,7 +372,7 @@ void VideoWidget::paintGL()
 
 }
 
-#include "mqgl_wrapper.cpp"
+#include "qgl_wrapper.moc"
 
 
 
