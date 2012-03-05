@@ -48,7 +48,7 @@ distclean:	clean
 
 clean:	
 		rm -f $(OBJS) $(TARGET) $(CPPOBJS)
-		rm -f mqgl_wrapper.cpp
+		rm -f qgl_wrapper.moc
 
 install: all
 	install -m 755 $(TARGET) "$(DESTDIR)$(libdir)/mlt"
