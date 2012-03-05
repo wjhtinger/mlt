@@ -56,6 +56,7 @@ static inline int convert_mlt_to_av_cs( mlt_image_format format )
 			value = PIX_FMT_YUV420P;
 			break;
 		case mlt_image_none:
+		case mlt_image_glsl:
 			fprintf( stderr, "Invalid format...\n" );
 			break;
 	}

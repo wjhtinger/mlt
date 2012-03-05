@@ -222,9 +222,16 @@ mlt_producer producer_loader_init( mlt_profile profile, mlt_service_type type, c
 	{
 		// Always let the image and audio be converted
 		int created = 0;
-		create_filter( profile, producer, "avcolor_space", &created );
-		if ( !created )
-			create_filter( profile, producer, "imageconvert", &created );
+		if ( mlt_properties_get_data( mlt_global_properties(), "glsl_env", 0 ) )
+		{
+			create_filter( profile, producer, "glsl.csc", &created );
+		}
+		else
+		{
+			create_filter( profile, producer, "avcolor_space", &created );
+			if ( !created )
+				create_filter( profile, producer, "imageconvert", &created );
+		}
 		create_filter( profile, producer, "audioconvert", &created );
 	}
 
