@@ -1,0 +1,19 @@
+schema_version: 0.1
+type: filter
+identifier: glsl.gamma
+title: Gamma GLSL
+version: 1
+copyright: Copyright (C) 2011 Christophe Thommeret
+creator: Christophe Thommeret<hftom@free.fr>
+license: LGPLv2.1
+language: en
+tags:
+  - Video
+description: Adjust image gamma.
+parameters:
+  - identifier: gamma
+    title: Gamma
+    type: float
+    minimum: 0.0
+    maximum: 5.0
+    default: 1.0

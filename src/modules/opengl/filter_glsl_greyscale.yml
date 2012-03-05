@@ -1,0 +1,12 @@
+schema_version: 0.1
+type: filter
+identifier: glsl.greyscale
+title: Greyscale GLSL
+version: 1
+copyright: Copyright (C) 2011 Christophe Thommeret
+creator: Christophe Thommeret<hftom@free.fr>
+license: LGPLv2.1
+language: en
+tags:
+  - Video
+description: Convert colour image to greyscale.

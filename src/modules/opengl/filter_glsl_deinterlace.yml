@@ -1,0 +1,12 @@
+schema_version: 0.1
+type: filter
+identifier: glsl.deinterlace
+title: Deinterlace GLSL
+version: 1
+copyright: Christophe Thommeret
+creator: Christophe Thommeret<hftom@free.fr>
+license: LGPLv2.1
+language: en
+tags:
+  - Video
+  - Hidden

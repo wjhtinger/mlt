@@ -1,0 +1,96 @@
+#!/bin/sh
+
+if [ "$help" = "1" ]
+then
+	cat << EOF
+QImage options:
+
+  --qgl-libdir         - Location of QT lib directory [/usr/lib/qt4]
+  --qgl-includedir     - Location of QT include directory [/usr/include/qt4]
+
+EOF
+
+else
+	targetos=$(uname -s)
+	case $targetos in
+	MINGW32*)
+		export LIBSUF=.dll
+		;;
+	Darwin)
+		export LIBSUF=.dylib
+		;;
+	Linux|FreeBSD|NetBSD)
+		export LIBSUF=.so
+		;;
+	*)
+		;;
+	esac
+
+	qgl_includedir=/usr/include/qt4
+	qgl_libdir=/usr/lib/qt4
+
+
+	if [ "$QTDIR" != "" ]
+	then
+		qgl_includedir="$QTDIR/include"
+		qgl_libdir="$QTDIR/lib"
+	fi
+
+	export qt4_found=
+
+	for i in "$@"
+	do
+		case $i in
+			--qgl-libdir=* )	qgl_libdir="${i#--qgl-libdir=}" ;;
+			--qgl-includedir=* )	qgl_includedir="${i#--qgl-includedir=}" ;;
+		esac
+	done
+
+	echo > config.h
+	echo > config.mak
+
+	pkg-config --exists 'QtGui >= 4'
+	if [ $? -eq 0 ]
+	then
+		echo "Qt version 4.x detected, will compile Qt4 opengl consumer"
+		qt4_found=true
+		echo "#define USE_QT4" >> config.h
+		echo "USE_QT4=1" >> config.mak
+		echo QTCXXFLAGS=$(pkg-config --cflags QtCore QtGui QtOpenGL ) >> config.mak
+		echo QTLIBS=$(pkg-config --libs QtCore QtGui QtOpenGL ) -lX11 >> config.mak
+		
+	elif [ -d "$qgl_libdir" -a -d "$qgl_includedir" ]
+	then
+
+		# test if we have a Qt4
+		if [ -f "$qgl_libdir/libQtCore.so" ] || [ -d "$qgl_libdir/QtGui.framework" ] || [ -f "$qgl_libdir/libQtCore4.a" ]
+		then
+			echo "Qt version 4.x detected, will compile Qt4 opengl consumer"
+			qt4_found=true
+		fi
+
+		echo "Include directory: " $qgl_includedir
+
+		if [ "$qt4_found" != "" ]
+		then
+			echo "#define USE_QT4" >> config.h
+			echo "USE_QT4=1" >> config.mak
+			if [ -d "$qgl_libdir/QtGui.framework" ]
+			then
+				echo QTCXXFLAGS=$(pkg-config --cflags QtCore QtGui QtOpenGL ) >> config.mak
+				echo QTLIBS=$(pkg-config --libs QtCore QtGui QtOpenGL ) -lX11 >> config.mak
+			elif [ -f "$qgl_libdir/libQtCore4.a" ]
+			then
+				echo QTCXXFLAGS=-I$qgl_includedir >> config.mak
+				echo QTLIBS=-enable-auto-import -L$qgl_libdir -lQtCore4 -lQtGui4 -lQtOpenGL -lX11 >> config.mak
+			else
+				echo QTCXXFLAGS=-I$qgl_includedir >> config.mak
+				echo QTLIBS=-L$qgl_libdir -lQtCore -lQtGui -lQtOpenGL -lX11 >> config.mak
+			fi
+		fi
+	else
+		echo "opengl: QT environment not found - disabling qgl consumer"
+		touch ../disable-opengl
+	fi
+
+fi

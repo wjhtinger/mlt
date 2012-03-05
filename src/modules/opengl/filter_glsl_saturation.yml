@@ -1,0 +1,19 @@
+schema_version: 0.1
+type: filter
+identifier: glsl.saturation
+title: Saturation GLSL
+version: 1
+copyright: Copyright (C) 2011 Christophe Thommeret
+creator: Christophe Thommeret<hftom@free.fr>
+license: LGPLv2.1
+language: en
+tags:
+  - Video
+description: Adjust colors saturation.
+parameters:
+  - identifier: saturation
+    title: Saturation
+    type: float
+    minimum: 0.0
+    maximum: 10.0
+    default: 1.0

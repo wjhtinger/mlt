@@ -1,0 +1,11 @@
+schema_version: 0.1
+type: consumer
+identifier: qgl
+title: Qt OpenGL
+version: 1
+copyright: 
+creator: Chritophe Thommeret
+license: GPLv2
+language: en
+tags:
+  - Video
