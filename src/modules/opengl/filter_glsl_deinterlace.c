@@ -161,11 +161,7 @@ static int filter_get_image( mlt_frame this, uint8_t **image, mlt_image_format *
 
 		glsl_texture dest = NULL;
 
-		if ( !method_str || !strcmp( method_str, "linearblend" ) )
-		{
-			dest = deinterlace_linearblend( g, source_tex, *width, *height );
-		}
-		else
+		if ( !method_str || !strcmp( method_str, "onefield" ) )
 		{
 			glsl_texture onefield = deinterlace_onefield( g, source_tex, *width, *height );
 			if ( !onefield )
@@ -173,6 +169,10 @@ static int filter_get_image( mlt_frame this, uint8_t **image, mlt_image_format *
 			dest = glsl_rescale_bilinear( g, onefield, *width, *height/2, *width, *height );
 			//dest = glsl_rescale_bicubic( g, onefield, *width, *height/2, *width, *height, CATMULLROM_SPLINE );
 			g->release_texture( onefield );
+		}
+		else
+		{
+			dest = deinterlace_linearblend( g, source_tex, *width, *height );
 		}
 
 		/* unlock gl */
