@@ -191,6 +191,7 @@ static void create_lut_texture( glsl_env g )
 	free( lut );
 	glBindTexture( GL_TEXTURE_RECTANGLE_ARB, 0 );
 
+	gtex->parent = g;
 	gtex->texture = tex;
 	gtex->width = LUTWIDTH;
 	gtex->height = N_SPLINES;
@@ -478,6 +479,7 @@ static glsl_texture glsl_get_texture( glsl_env g, int width, int height, GLint i
     glTexParameteri( GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
     glBindTexture( GL_TEXTURE_RECTANGLE_ARB, 0 );
 
+	gtex->parent = g;
 	gtex->texture = tex;
 	gtex->width = width;
 	gtex->height = height;
@@ -587,6 +589,7 @@ static void glsl_finish( glsl_env g )
 {
 	g->context_lock( g );
 	glFinish();
+	fprintf(stderr,"glsl_finish -----------------------[%ld]\n", syscall(SYS_gettid));
 	g->context_unlock( g );
 }
 
@@ -663,13 +666,55 @@ glsl_env glsl_env_create()
 
 
 
-int mlt_init_glsl()
+unsigned int mlt_glsl_get_texture( void *image )
 {
-	glsl_env g = glsl_env_create();
-	if ( g ) {
-		mlt_properties_set_data( mlt_global_properties(), "glsl_env", (void*)g, 0, NULL, NULL );
-		return 1;
+	glsl_texture tex = (glsl_texture)image;
+	glsl_env g = tex->parent;
+	g->finish( g );
+	return tex->texture;
+}
+
+int mlt_glsl_supported()
+{
+	char *extensions = glGetString( GL_EXTENSIONS );
+
+	if ( !strstr( extensions, "ARB_texture_rectangle" ) )
+		return 0;
+	if ( !strstr( extensions, "ARB_texture_non_power_of_two" ) )
+		return 0;
+	if ( !strstr( extensions, "ARB_pixel_buffer_object" ) )
+		return 0;
+	if ( !strstr( extensions, "ARB_framebuffer_object" ) )
+		return 0;
+	if ( !strstr( extensions, "ARB_fragment_shader" ) )
+		return 0;
+	if ( !strstr( extensions, "ARB_vertex_shader" ) )
+		return 0;
+
+	fprintf(stderr, "mlt_glsl is supported.\n");
+
+	return 1;
+}
+
+int mlt_glsl_init( void *make_current, void *done_current, void *user_data )
+{
+	mlt_properties prop = mlt_global_properties();
+
+	if ( mlt_properties_get_data( prop, "glsl_env", 0 ) ) {
+		fprintf(stderr, "  FATAL : global property \"glsl_env\" already exist!\n");
+		return 0;
 	}
 	
-	return 0;
+	glsl_env g = glsl_env_create();
+	if ( !g )
+		return 0;
+
+	g->context_make_current = make_current;
+	g->context_done_current = done_current;
+	g->user_data = user_data;
+
+	mlt_properties_set_data( prop, "glsl_env", (void*)g, 0, NULL, NULL );
+
+	fprintf(stderr, "mlt_glsl init done.\n");
+	return 1;
 }
