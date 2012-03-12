@@ -107,6 +107,23 @@ mlt_repository mlt_repository_init( const char *directory )
 
 				// Register the object file for closure
 				mlt_properties_set_data( &self->parent, object_name, object, 0, ( mlt_destructor )dlclose, NULL );
+
+				// opengl plugin
+				if ( strstr( object_name, "libmltopengl" ) )
+				{
+					int ( *mlt_glsl_supported )();
+					mlt_glsl_supported = dlsym( object, "mlt_glsl_supported" );
+					int ( *mlt_glsl_init )( void*, void*, void* );
+					mlt_glsl_init = dlsym( object, "mlt_glsl_init" );
+					unsigned int ( *mlt_glsl_get_texture )( void* );
+					mlt_glsl_get_texture = dlsym( object, "mlt_glsl_get_texture" );
+					if ( mlt_glsl_supported && mlt_glsl_init && mlt_glsl_get_texture )
+					{
+						mlt_properties_set_data( mlt_global_properties(), "mlt_glsl_supported", (void*)mlt_glsl_supported, 0, NULL, NULL );
+						mlt_properties_set_data( mlt_global_properties(), "mlt_glsl_init", (void*)mlt_glsl_init, 0, NULL, NULL );
+						mlt_properties_set_data( mlt_global_properties(), "mlt_glsl_get_texture", (void*)mlt_glsl_get_texture, 0, NULL, NULL );
+					}
+				}
 			}
 			else
 			{
