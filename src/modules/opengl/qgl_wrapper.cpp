@@ -266,28 +266,34 @@ void VideoWidget::initializeGL()
 	glEnable( GL_TEXTURE_RECTANGLE_ARB );
 	glHint( GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST );
 
-	fprintf(stderr, "Vendor : %s\n", glGetString( GL_VENDOR ));
-	fprintf(stderr, "Renderer : %s\n", glGetString( GL_RENDERER ));
-	fprintf(stderr, "Version : %s\n", glGetString( GL_VERSION ));
-	fprintf(stderr, "GLSL : %s\n", glGetString( GL_SHADING_LANGUAGE_VERSION ));
-	//printf("Vendor : %s\n", glGetString( GL_EXTENSIONS ));
-
-	hiddenctx = new QGLWidget( 0, this );
-	if ( hiddenctx->isSharing() ) {
-		fprintf(stderr, "Shared context created.\n");
-		hiddenctx->doneCurrent();
-		mlt_properties prop = mlt_global_properties();
-		glsl_env g = (glsl_env)mlt_properties_get_data( prop, "glsl_env", 0 );
-		if ( g ) {
-			g->context_make_current = hiddenMakeCurrent;
-			g->context_done_current = hiddenDoneCurrent;
-			g->user_data = (void*)hiddenctx;
+	typedef int (*MLT_GLSL_SUPPORTED)();
+	MLT_GLSL_SUPPORTED mlt_glsl_supported;
+	mlt_properties prop = mlt_global_properties();
+	mlt_glsl_supported = (MLT_GLSL_SUPPORTED)mlt_properties_get_data( prop, "mlt_glsl_supported", NULL );
+	if ( mlt_glsl_supported ) {
+		hiddenctx = new QGLWidget( 0, this );
+		if ( hiddenctx->isSharing() ) {
+			fprintf(stderr, "Shared context created.\n");
+			doneCurrent();
+			hiddenctx->makeCurrent();
+			if ( !mlt_glsl_supported() ) {
+				hiddenctx->doneCurrent();
+				delete hiddenctx;
+			}
+			else {
+				hiddenctx->doneCurrent();
+				glsl_env g = (glsl_env)mlt_properties_get_data( prop, "glsl_env", 0 );
+				if ( g ) {
+					g->context_make_current = hiddenMakeCurrent;
+					g->context_done_current = hiddenDoneCurrent;
+					g->user_data = (void*)hiddenctx;
+				}
+			}
 		}
-		else
+		else {
 			delete hiddenctx;
+		}
 	}
-	else
-		delete hiddenctx;
 	makeCurrent();
 
 	mglXSwapInterval = (GLXSWAPINTERVALSGI)context()->getProcAddress( "glXSwapIntervalSGI" );
@@ -377,7 +383,11 @@ extern "C" {
 
 void start_qgl( consumer_qgl consumer )
 {
-	QApplication app( 0, NULL );
+	int argc = 1;
+	char *argv = new char(5);
+	strcpy( argv, "none");
+	
+	QApplication app( argc, &argv );
 
 	VideoWidget *vw = new VideoWidget( consumer );
 	vw->show();

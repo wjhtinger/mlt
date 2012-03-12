@@ -77,7 +77,6 @@ mlt_consumer consumer_qgl_init( mlt_profile profile, mlt_service_type type, cons
 		// not more than 1
 		mlt_properties_set_int( this->properties, "real_time", 0 );
 
-
 		// Default buffer for low latency
 		mlt_properties_set_int( this->properties, "buffer", 1 );
 
