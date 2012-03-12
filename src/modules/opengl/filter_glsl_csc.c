@@ -97,39 +97,61 @@ static const char *glsl_to_yuv422_frag=
 
 
 
-static void load_601_to_glsl( GLuint prog )
+float from_yuv_601[] = {
+	1.16438,  0.00000,  1.59603, -0.87420,
+	1.16438, -0.39176, -0.81297,  0.53167,
+	1.16438,  2.01723,  0.00000, -1.08563
+};
+
+float from_yuv_709[] = {
+	1.16438,  0.00000,  1.79274, -0.97295,
+	1.16438, -0.21325, -0.53291,  0.30148,
+	1.16438,  2.11240,  0.00000, -1.13340
+};
+
+float from_yuv_240[] = {
+	1.16438,  0.00000,  1.79411, -0.97363,
+	1.16438, -0.25798, -0.54258,  0.32879,
+	1.16438,  2.07871,  0.00000, -1.11649
+};
+
+static void load_yuv_to_glsl( GLuint prog, float *cf )
 {
-	glUniform4f( glGetUniformLocationARB( prog, "r_coefs" ), 1.16438, 0.00000, 1.59603, -0.87419 );
-	glUniform4f( glGetUniformLocationARB( prog, "g_coefs" ), 1.16438, -0.39176, -0.81297, 0.53170 );
-	glUniform4f( glGetUniformLocationARB( prog, "b_coefs" ), 1.16438, 2.01723, 0.00000, -1.08562 );
+	glUniform4f( glGetUniformLocationARB( prog, "r_coefs" ), cf[0], cf[1], cf[2], cf[3] );
+	glUniform4f( glGetUniformLocationARB( prog, "g_coefs" ), cf[4], cf[5], cf[6], cf[7] );
+	glUniform4f( glGetUniformLocationARB( prog, "b_coefs" ), cf[8], cf[9], cf[10], cf[11] );
 }
 
-static void load_glsl_to_601( GLuint prog )
-{
-	glUniform4f( glGetUniformLocationARB( prog, "y_coefs" ), 0.25679, 0.50413, 0.09790, 0.06275 );
-	glUniform4f( glGetUniformLocationARB( prog, "u_coefs" ), -0.14822, -0.29099, 0.43922, 0.50196 );
-	glUniform4f( glGetUniformLocationARB( prog, "v_coefs" ), 0.43922, -0.36779, -0.07143, 0.50196 );
-}
+float to_yuv_601[] = {
+	 0.25679,  0.50413,  0.09791, 0.06275,
+	-0.14822, -0.29099,  0.43922, 0.50196,
+	 0.43922, -0.36779, -0.07143, 0.50196
+};
 
-static void load_glsl_to_709( GLuint prog )
-{
-	glUniform4f( glGetUniformLocationARB( prog, "y_coefs" ), 0.18675, 0.62825, 0.063418, 0.06275 );
-	glUniform4f( glGetUniformLocationARB( prog, "u_coefs" ), -0.10064, -0.33857, 0.43922, 0.50196 );
-	glUniform4f( glGetUniformLocationARB( prog, "v_coefs" ), 0.43922, -0.39894, -0.04028, 0.50196 );
-}
+float to_yuv_709[] = {
+	 0.18259,  0.61423,  0.06201, 0.06275,
+	-0.10064, -0.33857,  0.43922, 0.50196,
+	 0.43922, -0.39894, -0.04027, 0.50196
+};
 
-static void load_glsl_to_240( GLuint prog )
+float to_yuv_240[] = {
+	 0.18207,  0.60204,  0.07472, 0.06275,
+	-0.10199, -0.33723,  0.43922, 0.50196,
+	 0.43922, -0.39072, -0.04849, 0.50196
+};
+
+static void load_glsl_to_yuv( GLuint prog, float *cf )
 {
-	glUniform4f( glGetUniformLocationARB( prog, "y_coefs" ), 0.18207, 0.60203, 0.07472, 0.06275 );
-	glUniform4f( glGetUniformLocationARB( prog, "u_coefs" ), -0.10169, -0.33723, 0.43922, 0.50196 );
-	glUniform4f( glGetUniformLocationARB( prog, "v_coefs" ), 0.43922, -0.39073, -0.04849, 0.50196 );
+	glUniform4f( glGetUniformLocationARB( prog, "y_coefs" ), cf[0], cf[1], cf[2], cf[3] );
+	glUniform4f( glGetUniformLocationARB( prog, "u_coefs" ), cf[4], cf[5], cf[6], cf[7] );
+	glUniform4f( glGetUniformLocationARB( prog, "v_coefs" ), cf[8], cf[9], cf[10], cf[11] );
 }
 
 
 
 static glsl_texture rgb_to_glsl( glsl_env g, uint8_t *image, int width, int height, int rgba )
 {
-	fprintf(stderr,"filter_glsl_csc convert_image -----------------------rgb to glsl\n");
+	fprintf(stderr,"filter_glsl_csc convert_image -----------------------%s to glsl\n", ((rgba) ? "rgba" : "rgb"));
 
 	glsl_pbo pbo = g->get_pbo( g, width * height * ((rgba) ? 4 : 3) );
 	if ( !pbo )
@@ -233,13 +255,13 @@ static glsl_texture yuv420p_to_glsl( glsl_env g, uint8_t *image, int width, int 
 	glUniform1i( glGetUniformLocationARB( shader->program, "texV" ), 2 );
 	switch ( colorspace ) {
 		case 240:
-			load_601_to_glsl( shader->program );
+			load_yuv_to_glsl( shader->program, from_yuv_240 );
 			break;
 		case 709:
-			load_601_to_glsl( shader->program );
+			load_yuv_to_glsl( shader->program, from_yuv_709 );
 			break;
 		default:
-			load_601_to_glsl( shader->program );
+			load_yuv_to_glsl( shader->program, from_yuv_601 );
 			break;
 	}
 
@@ -310,13 +332,13 @@ static glsl_texture yuv422_to_glsl( glsl_env g, uint8_t *image, int width, int h
 	glUniform1i( glGetUniformLocationARB( shader->program, "texYUV" ), 0 );
 	switch ( colorspace ) {
 		case 240:
-			load_601_to_glsl( shader->program );
+			load_yuv_to_glsl( shader->program, from_yuv_240 );
 			break;
 		case 709:
-			load_601_to_glsl( shader->program );
+			load_yuv_to_glsl( shader->program, from_yuv_709 );
 			break;
 		default:
-			load_601_to_glsl( shader->program );
+			load_yuv_to_glsl( shader->program, from_yuv_601 );
 			break;
 	}
 
@@ -365,13 +387,13 @@ static uint8_t* glsl_to_yuv422( glsl_env g, glsl_texture source_tex, int *size, 
 	glUniform1i( glGetUniformLocationARB( shader->program, "texRGB" ), 0 );
 	switch ( colorspace ) {
 		case 240:
-			load_glsl_to_240( shader->program );
+			load_glsl_to_yuv( shader->program, to_yuv_240 );
 			break;
 		case 709:
-			load_glsl_to_709( shader->program );
+			load_glsl_to_yuv( shader->program, to_yuv_709 );
 			break;
 		default:
-			load_glsl_to_601( shader->program );
+			load_glsl_to_yuv( shader->program, to_yuv_601 );
 			break;
 	}
 
@@ -393,6 +415,48 @@ static uint8_t* glsl_to_yuv422( glsl_env g, glsl_texture source_tex, int *size, 
 
 	g->release_fbo( fbo );
 	g->release_texture( dest );
+
+	return image;
+}
+
+
+
+static uint8_t* glsl_to_yuv420p( glsl_env g, glsl_texture source_tex, int *size, int width, int height, int colorspace )
+{
+	fprintf(stderr,"filter_glsl_csc convert_image -----------------------glsl to yuv420p, source_tex : %u\n",source_tex->texture );
+
+	uint8_t *yuv422 = glsl_to_yuv422( g, source_tex, size, width, height, colorspace );
+	if ( !yuv422 )
+		return NULL;
+
+	*size = width * height * 3 / 2;
+	uint8_t *image = mlt_pool_alloc( *size );
+
+	uint8_t *start = yuv422;
+	uint8_t *y_plane = image;
+	uint8_t *u_plane = y_plane + (width * height);
+	uint8_t *v_plane = u_plane + (width * height / 4);
+	int yuv422_stride = width * 2;
+	int y_stride = width;
+
+	int w, h = height / 2;
+	while ( h-- ) {
+		w = width / 2;
+		while ( w-- ) {
+			y_plane[0] = start[0];
+			y_plane[1] = start[2];
+			y_plane[y_stride] = start[yuv422_stride];
+			y_plane[y_stride + 1] = start[yuv422_stride + 2];
+			*u_plane++ = (start[1] + start[yuv422_stride + 1]) / 2;
+			*v_plane++ = (start[3] + start[yuv422_stride + 3]) / 2;
+			start += 4;
+			y_plane += 2;
+		}
+		start += yuv422_stride;
+		y_plane += y_stride;
+	}
+
+	mlt_pool_release( yuv422 );
 
 	return image;
 }
@@ -483,6 +547,9 @@ static int convert_image( mlt_frame frame, uint8_t **image, mlt_image_format *fo
 
 		if ( output_format == mlt_image_yuv422 ) {
 			dest = glsl_to_yuv422( g, texture, &size, width, height, colorspace );
+		}
+		else if ( output_format == mlt_image_yuv420p ) {
+			dest = glsl_to_yuv420p( g, texture, &size, width, height, colorspace );
 		}
 		else if ( output_format == mlt_image_rgb24 ) {
 			dest = glsl_to_rgb( g, texture, &size, width, height, 0 );
