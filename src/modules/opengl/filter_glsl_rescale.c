@@ -119,14 +119,17 @@ static int filter_get_image( mlt_frame frame, uint8_t **image, mlt_image_format 
 			/* lock gl */
 			g->context_lock( g );
 			
-			if ( !strcmp( interps, "bicubic" ) ) {
+			if ( !strcmp( interps, "nearest" ) || !strcmp( interps, "bilinear" ) )
+			{
+				dest = glsl_rescale_bilinear( g, source_tex, iwidth, iheight, owidth, oheight );
+			}
+			else
+			{
 				int spline = CATMULLROM_SPLINE;
 				if ( owidth < iwidth || oheight < iheight )
 					spline = COS_SPLINE;
 				dest = glsl_rescale_bicubic( g, source_tex, iwidth, iheight, owidth, oheight, spline );
 			}
-			else
-				dest = glsl_rescale_bilinear( g, source_tex, iwidth, iheight, owidth, oheight );
 
 			/* unlock gl */
 			g->context_unlock( g );
