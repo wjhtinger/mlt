@@ -34,6 +34,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <sys/time.h>
 #include <pthread.h>
 
 #include <framework/mlt.h>
@@ -271,7 +272,13 @@ void* video_thread( void *arg )
 {
 	mlt_frame next = NULL;
 	mlt_consumer consumer = &xgl->parent;
-
+	mlt_properties consumer_props = MLT_CONSUMER_PROPERTIES( consumer );
+	struct timeval start, end;
+	int skipped = 0;
+	double duration = 0;
+	
+	gettimeofday( &start, NULL );
+	
 	while ( vthread.running )
 	{
 		// Get a frame from the attached producer
@@ -300,6 +307,14 @@ void* video_thread( void *arg )
 						usleep( 500 );
 				}
 				new_frame.new = 0;
+				
+				gettimeofday( &end, NULL );
+				duration = 1000000.0 / mlt_properties_get_double( consumer_props, "fps" );
+				duration -= ( end.tv_sec * 1000000 + end.tv_usec ) - ( start.tv_sec * 1000000 + start.tv_usec );
+				if ( duration > 0 )
+					usleep( (int)duration );
+				gettimeofday( &start, NULL );
+				
 				// This frame can now be closed
 				mlt_frame_close( next );
 			}
