@@ -64,7 +64,6 @@ MLT_REPOSITORY
 	MLT_REGISTER( filter_type, "glsl.gamma", filter_glsl_gamma_init );
 	MLT_REGISTER( transition_type, "glsl.luma", transition_glsl_luma_init );
 	
-	MLT_REGISTER_METADATA( consumer_type, "qgl", metadata, "consumer_qgl.yml" );
 	MLT_REGISTER_METADATA( filter_type, "glsl.greyscale", metadata, "filter_glsl_greyscale.yml" );
 	MLT_REGISTER_METADATA( filter_type, "glsl.csc", metadata, "filter_glsl_csc.yml" );
 	MLT_REGISTER_METADATA( filter_type, "glsl.crop", metadata, "filter_glsl_crop.yml" );
