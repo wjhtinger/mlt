@@ -146,8 +146,8 @@ void VideoThread::run()
 				duration = 1000.0 / mlt_properties_get_double( consumer_props, "fps" );
 				duration -= time.elapsed();
 				fprintf(stderr, "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ %f ms @@@@@@@@@@@@@@@@@@ \n", duration);
-				if ( duration > 0 )
-					msleep( (int)duration );
+				//if ( duration > 0 )
+					//msleep( (int)duration );
 
 				// This frame can now be closed
 				fprintf(stderr, ".........................mlt_frame_close\n");
@@ -174,7 +174,7 @@ void VideoThread::run()
 VideoWidget::VideoWidget( consumer_qgl consumer ) : QGLWidget()
 {
 	setAttribute( Qt::WA_DeleteOnClose );
-	setWindowTitle( "OpenGL consumer" );
+	setWindowTitle( "QtOpenGL consumer" );
 	qgl = consumer;
 
 	thread = 0;
@@ -251,7 +251,7 @@ void VideoWidget::showFrame( glsl_texture gt, int w, int h, double ar )
     glPopAttrib();
 	
 	aspectRatio = ((double)w / (double)h) * ar;
-	QTimer::singleShot( 0, this, SLOT(updateGL()) );
+	updateGL();
 }
 
 void VideoWidget::initializeGL()

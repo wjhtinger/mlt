@@ -72,7 +72,7 @@ mlt_consumer consumer_qgl_init( mlt_profile profile, mlt_service_type type, cons
 		mlt_properties_set( this->properties, "deinterlace_method", "onefield" );
 
 		// default image format
-		mlt_properties_set( this->properties, "mlt_image_format", "none" );
+		mlt_properties_set( this->properties, "mlt_image_format", "glsl" );
 
 		// not more than 1
 		mlt_properties_set_int( this->properties, "real_time", 0 );
