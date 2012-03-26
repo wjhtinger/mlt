@@ -9,7 +9,7 @@ TARGET = ../libmltopengl$(LIBSUF)
 
 OBJS = factory.o \
 	mlt_glsl.o \
-	consumer_qgl.o \
+	consumer_xgl.o \
 	filter_glsl_greyscale.o \
 	filter_glsl_csc.o \
 	filter_glsl_crop.o \
@@ -23,18 +23,13 @@ OBJS = factory.o \
 	filter_glsl_gamma.o \
 	transition_glsl_luma.o
 
-CPPOBJS = qgl_wrapper.o
-
 CXXFLAGS += $(CFLAGS) $(QTCXXFLAGS) -Wno-deprecated
 
-LDFLAGS += $(QTLIBS)
+LDFLAGS += $(XLIBS)
 
 SRCS := $(OBJS:.o=.c) $(CPPOBJS:.o=.cpp)
 
 all: $(TARGET)
-qgl_wrapper.o: qgl_wrapper.moc
-qgl_wrapper.moc: qgl_wrapper.cpp
-	moc-qt4 $(DEFINES) $(INCPATH) -i $< -o $@
 
 $(TARGET): $(OBJS) $(CPPOBJS)
 		$(CXX) $(SHFLAGS) -o $@ $(OBJS) $(CPPOBJS) $(LDFLAGS)
@@ -47,7 +42,6 @@ distclean:	clean
 
 clean:	
 		rm -f $(OBJS) $(TARGET) $(CPPOBJS)
-		rm -f qgl_wrapper.moc
 
 install: all
 	install -m 755 $(TARGET) "$(DESTDIR)$(libdir)/mlt"
