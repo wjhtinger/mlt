@@ -125,6 +125,8 @@ struct glsl_env_s
 	void ( *finish )( glsl_env );
 
 	glsl_texture bicubic_lut;
+	
+	int texture_float;
 };
 
 

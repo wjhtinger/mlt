@@ -119,7 +119,7 @@ static int filter_get_image( mlt_frame frame, uint8_t **image, mlt_image_format 
 			/* lock gl */
 			g->context_lock( g );
 			
-			if ( !strcmp( interps, "nearest" ) || !strcmp( interps, "bilinear" ) )
+			if ( !strcmp( interps, "nearest" ) || !strcmp( interps, "bilinear" ) || !g->texture_float )
 			{
 				dest = glsl_rescale_bilinear( g, source_tex, iwidth, iheight, owidth, oheight );
 			}

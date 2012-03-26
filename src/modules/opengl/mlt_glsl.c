@@ -647,6 +647,8 @@ glsl_env glsl_env_create()
 		g->finish = glsl_finish;
 
 		g->bicubic_lut = NULL;
+		
+		g->texture_float = 0;
 
 		pthread_mutex_init( &g->gl_mutex, NULL );
 	}
@@ -680,8 +682,6 @@ int mlt_glsl_supported()
 		return 0;
 	if ( !strstr( extensions, "ARB_vertex_shader" ) )
 		return 0;
-	if ( !strstr( extensions, "ARB_texture_float" ) )
-		return 0;
 
 	fprintf(stderr, "mlt_glsl is supported.\n");
 
@@ -699,6 +699,11 @@ int mlt_glsl_init( void *make_current, void *done_current, void *user_data )
 	
 	if ( !g )
 		return 0;
+	
+	// check for optionnal features
+	char *extensions = glGetString( GL_EXTENSIONS );
+	if ( strstr( extensions, "ARB_texture_float" ) )
+		g->texture_float = 1;
 
 	g->context_make_current = make_current;
 	g->context_done_current = done_current;
