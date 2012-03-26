@@ -1,3 +1,26 @@
+/*
+ * consumer_xgl.c
+ * Copyright (C) 2012 Christophe Thommeret
+ * Author: Christophe Thommeret <hftom@free.fr>
+ * Based on Nehe's GLX port by Mihael.Vrbanec@stud.uni-karlsruhe.de
+ * http://nehe.gamedev.net/
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
+
+
 #define GL_GLEXT_PROTOTYPES
 
 #include <GL/gl.h>
@@ -23,9 +46,6 @@
 
 extern int XInitThreads();
 
- 
-enum KEYCODES { WK_1, WK_2, WK_3, WK_4, WK_UP, WK_DOWN, WK_LEFT, WK_RIGHT,
-	WK_SPACE, WK_PRIOR, WK_NEXT, WK_Q, WK_Z, WK_W, WK_S, WK_D, WK_A };
 
 
 typedef struct consumer_xgl_s *consumer_xgl;
@@ -97,8 +117,6 @@ MLT_GLSL_TEXTURE mlt_glsl_texture;
 	
 static GLWindow GLWin;
 static HiddenContext hiddenctx;
-static char keys[256];
-static int keyBindings[20];
 
 static frame_new new_frame;
 static fbo fb;
@@ -109,29 +127,6 @@ static consumer_xgl xgl;
 
 
 static void* video_thread( void *arg );
-
-
-
-static void initKeys()
-{
-	keyBindings[WK_1] =  	XKeysymToKeycode(GLWin.dpy, XK_1);
-	keyBindings[WK_2] =  	XKeysymToKeycode(GLWin.dpy, XK_2);
-	keyBindings[WK_3] =  	XKeysymToKeycode(GLWin.dpy, XK_3);
-	keyBindings[WK_4] =  	XKeysymToKeycode(GLWin.dpy, XK_4);
-	keyBindings[WK_UP] = 	XKeysymToKeycode(GLWin.dpy, XK_Up);
-	keyBindings[WK_DOWN] =  XKeysymToKeycode(GLWin.dpy, XK_Down);
-	keyBindings[WK_LEFT] =  XKeysymToKeycode(GLWin.dpy, XK_Left);
-	keyBindings[WK_RIGHT] = XKeysymToKeycode(GLWin.dpy, XK_Right);
-	keyBindings[WK_SPACE] = XKeysymToKeycode(GLWin.dpy, XK_space);
-	keyBindings[WK_Z] =  	XKeysymToKeycode(GLWin.dpy, XK_Z);
-	keyBindings[WK_Q] = 	XKeysymToKeycode(GLWin.dpy, XK_Q);
-	keyBindings[WK_W] = 	XKeysymToKeycode(GLWin.dpy, XK_W);
-	keyBindings[WK_S] = 	XKeysymToKeycode(GLWin.dpy, XK_S);
-	keyBindings[WK_D] =  	XKeysymToKeycode(GLWin.dpy, XK_D);
-	keyBindings[WK_A] = 	XKeysymToKeycode(GLWin.dpy, XK_A);
-	keyBindings[WK_PRIOR] = XKeysymToKeycode(GLWin.dpy,XK_Prior);
-	keyBindings[WK_NEXT] = 	XKeysymToKeycode(GLWin.dpy, XK_Next);
-}
 
 
 
@@ -456,18 +451,12 @@ static void createGLWindow()
 		fprintf(stderr, "No shared context :-(\n");
 
 	initGL();
-	initKeys();
 }
 
 
 
 static void killGLWindow()
-{
-	if ( vthread.running ) {
-		vthread.running = 0;
-		pthread_join( vthread.thread, NULL );
-	}
-		
+{		
 	if ( GLWin.ctx ) {
 		if ( !glXMakeCurrent( GLWin.dpy, None, NULL ) ) {
 			printf("Error releasing drawing context : killGLWindow\n");
@@ -487,9 +476,8 @@ static void killGLWindow()
 static void run()
 {
 	XEvent event;
-	int running = 1;
 
-	while ( running ) {
+	while ( xgl->running ) {
 		while ( XPending( GLWin.dpy ) > 0 ) {
 			XNextEvent( GLWin.dpy, &event );
 			switch ( event.type ) {
@@ -505,19 +493,26 @@ static void run()
 					}
 					break;
 				case KeyPress:
-					keys[event.xkey.keycode] = True;
 					switch ( XLookupKeysym( &event.xkey, 0 ) ) {
 						case XK_Escape:									
-							running = 0;
+							xgl->running = 0;
 							break;
+						default: {
+							mlt_producer producer = mlt_properties_get_data( xgl->properties, "transport_producer", NULL );
+							char keyboard[ 2 ] = " ";
+							void (*callback)( mlt_producer, char * ) = mlt_properties_get_data( xgl->properties, "transport_callback", NULL );
+							if ( callback != NULL && producer != NULL )
+							{
+								keyboard[ 0 ] = ( char )XLookupKeysym( &event.xkey, 0 );
+								callback( producer, keyboard );
+							}
+							break;
+						}
 					}
-					break;
-				case KeyRelease:
-					keys[event.xkey.keycode] = False;
 					break;
 				case ClientMessage:
 					if ( *XGetAtomName( GLWin.dpy, event.xclient.message_type ) == *"WM_PROTOCOLS" )
-						running = 0;
+						xgl->running = 0;
 					break;
 				default:
 					break;
@@ -547,6 +542,10 @@ void start_xgl( consumer_xgl consumer )
 	
 	createGLWindow();
 	run();
+	if ( vthread.running ) {
+		vthread.running = 0;
+		pthread_join( vthread.thread, NULL );
+	}
 	killGLWindow();
 	xgl->running = 0;
 }
