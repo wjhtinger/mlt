@@ -34,9 +34,6 @@
 #define CATMULLROM_SPLINE 	0
 #define COS_SPLINE			1
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 
 #define MAXLISTCOUNT 1024
@@ -112,11 +109,10 @@ struct glsl_env_s
 	
 	void *user_data;
 	pthread_mutex_t gl_mutex;
-	int ( *context_lock )( glsl_env g );
+	void ( *context_lock )( glsl_env g );
 	void ( *context_unlock )( glsl_env g );
 	void ( *context_make_current )( void *user_data ); // callback
 	void ( *context_done_current )( void *user_data ); // callback
-	int is_context_current;
 
 	glsl_fbo ( *get_fbo )( glsl_env, int, int );
 	void ( *release_fbo )( glsl_fbo );
@@ -139,9 +135,5 @@ extern void glsl_set_ortho_view( int width, int height );
 extern void glsl_draw_quad( float x1, float y1, float x2, float y2 );
 
 
-#ifdef __cplusplus
-}
-#endif
-
-
 #endif /*MLT_GLSL*/
+

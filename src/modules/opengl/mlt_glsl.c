@@ -20,6 +20,7 @@
 
 #include "mlt_glsl.h"
 
+#include <framework/mlt_properties.h>
 #include <framework/mlt_factory.h>
 
 #include <string.h>
@@ -589,28 +590,20 @@ static void glsl_finish( glsl_env g )
 {
 	g->context_lock( g );
 	glFinish();
-	fprintf(stderr,"glsl_finish -----------------------[%ld]\n", syscall(SYS_gettid));
+	fprintf(stderr,"glsl_finish -----------------------[%d]\n", syscall(SYS_gettid));
 	g->context_unlock( g );
 }
 
 
 
-static int p_make_current_and_lock( glsl_env g )
+static void p_make_current_and_lock( glsl_env g )
 {
 	if ( g->user_data && g->context_make_current ) {
 		pthread_mutex_lock( &g->gl_mutex );
-		
 		g->context_make_current( g->user_data );
-		g->is_context_current = 1;
-
 		if ( !g->init_done )
 			glsl_do_init( g );
-
-		return 1;
 	}
-
-	fprintf( stderr, "No context available.\n" );
-	return 0;
 }
 
 
@@ -619,8 +612,6 @@ static void p_done_current_and_unlock( glsl_env g )
 {
 	if ( g->user_data && g->context_done_current ) {
 		g->context_done_current( g->user_data );
-		g->is_context_current = 0;
-
 		pthread_mutex_unlock( &g->gl_mutex );
 	}
 }
@@ -644,7 +635,6 @@ glsl_env glsl_env_create()
 		g->context_done_current = NULL;
 		g->context_lock = p_make_current_and_lock;
 		g->context_unlock = p_done_current_and_unlock;
-		g->is_context_current = 0;
 		
 		g->get_fbo = glsl_get_fbo;
 		g->release_fbo = glsl_release_fbo;
@@ -690,6 +680,8 @@ int mlt_glsl_supported()
 		return 0;
 	if ( !strstr( extensions, "ARB_vertex_shader" ) )
 		return 0;
+	if ( !strstr( extensions, "ARB_texture_float" ) )
+		return 0;
 
 	fprintf(stderr, "mlt_glsl is supported.\n");
 
@@ -700,12 +692,11 @@ int mlt_glsl_init( void *make_current, void *done_current, void *user_data )
 {
 	mlt_properties prop = mlt_global_properties();
 
-	if ( mlt_properties_get_data( prop, "glsl_env", 0 ) ) {
-		fprintf(stderr, "  FATAL : global property \"glsl_env\" already exist!\n");
-		return 0;
-	}
+	glsl_env g = mlt_properties_get_data( prop, "glsl_env", 0 );
 	
-	glsl_env g = glsl_env_create();
+	if ( !g )
+		g = glsl_env_create();
+	
 	if ( !g )
 		return 0;
 
