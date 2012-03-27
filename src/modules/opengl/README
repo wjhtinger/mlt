@@ -4,7 +4,7 @@
 
 
 -------------------------------------------------------------------------------
-                               Introduction
+                                Introduction
 -------------------------------------------------------------------------------
 
 The choosen design doesn't introduce any new dependency and requires
@@ -15,11 +15,21 @@ It begins with the introduction of a new image format,
 with a possible later support of OpenCL.)
 
 Then all OpenGL services and utils are embedded in a plugin (libmltopengl)
-whose sources lie in the module/opengl directory.
+whose sources lie in the modules/opengl directory.
 
 
 -------------------------------------------------------------------------------
-                         Application Interface
+								 Quick Start
+-------------------------------------------------------------------------------
+
+melt -profile atsc_1080p_25 -consumer xgl /path/to/file.mkv
+
+(Note that you must set a profile, melt autoprofile would crash (until fixed)).
+(The xgl consumer is really basic, no sound and a very simple speed control).
+
+
+-------------------------------------------------------------------------------
+                            Application Interface
 -------------------------------------------------------------------------------
 
 At run time, when the opengl plugin is loaded, mlt_repository_init 
