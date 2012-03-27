@@ -103,7 +103,7 @@ static int filter_get_image( mlt_frame frame, uint8_t **image, mlt_image_format 
 			mlt_properties_set_int( properties, "consumer_deinterlace", 1 );
 
 		*format = mlt_image_glsl;
-		int error = mlt_frame_get_image( frame, image, format, width, height, 1 );
+		int error = mlt_frame_get_image( frame, image, format, &iwidth, &iheight, 1 );
 		glsl_texture source_tex = (glsl_texture)mlt_properties_get_data( properties, "image", NULL );
 
 		if ( !source_tex || error )
