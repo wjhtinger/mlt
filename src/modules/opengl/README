@@ -61,6 +61,7 @@ if ( glsl_supported && glsl_init && glsl_get_texture )
 
 mlt_glsl_supported:
 must be called with a valid opengl context bound to the calling thread.
+This also apply to mlt_glsl_init.
 Typically, it's called in your "initGL" function.
 See mlt_glsl_supported() in mlt_glsl.c for the OpenGL requirements.
 
@@ -150,6 +151,9 @@ extract RGBA (e.g. with glReadPixels), this can be done in your main thread
 with a PBO, and with most GPU it should happen in parallel to rendering 
 (modern GPU have at least one dedicated, asynchronous, data transfer engine).
 
+Note that opengl coordinates origin is bottom-left. mlt_glsl does not flip
+images. You have to do it when displaying.
+
 Note that it's strongly recommended to _not_ mix soft filters with glsl ones.
 This would cause a huge performance penalty, and is not guaranteed to give
 the expected result.
@@ -164,7 +168,7 @@ registers the pointer as a global data property called "glsl_env".
 This property is checked in a number of places:
 - In all glsl services init method. 
   If mlt_properties_get_data( mlt_global_properties(), "glsl_env", 0 )
- returns NULL, then the service initialization fails and returns NULL.
+  returns NULL, then the service initialization fails and returns NULL.
 - In producer_loader_init.
   If mlt_properties_get_data( mlt_global_properties(), "glsl_env", 0 )
   returns non NULL, then the filter glsl.csc is created instead of 
@@ -188,3 +192,38 @@ The color space conversion filter, glsl.csc, can convert any mlt format to
 glsl and glsl to any mlt format. However, it does not import or export alpha_mask.
 
 
+Threading:
+The current implementation is thread safe, so you should be able to assign any
+value to real_time (see note1 below). All services must acquire the gl mutex
+(g->context_lock()) before calling gl commands and release it 
+(g->context_unlock()) when done. context_lock/unlock does two things, it 
+locks/unlocks the mutex and bind/unbind the gl context.
+(Note that calling mlt_frame_get_image _after_ context_lock would
+trigger a deadlock.)
+NOTE1: the xgl consumer defaults to real_time=0. real_time=1 works fine in most
+cases, as long as the hardware (cpu+gpu) can decode/render in realtime. Else,
+mlt starts alternating between synchronous and asynchronous and the gl context
+is switched beetween the two threads => huge slowdown.
+Ideally, mlt_glsl would have a threading model that keeps asynchronous rendering
+while never switching to another thread. The gl context would be bound at
+consumer_read_ahead_thread start and unbound at end. But i need help for this.
+NOTE2: even with real_time=0, the gl context is bound/unbound a lot. This is not
+a problem as long as it happens in the same thread (in this case, no context
+switching happens) but it seems to trigger a bug. I've started devel on
+kubuntu 10.04 where it worked as expected, then i've tested on an intel/mesa 
+laptop running 11.10 and there i saw the bug: the XNextEvent call blocks, until
+a new event enters the queue, so i had to continuously move the mouse over the
+the consumer window (or hit keyboard keys). I've upgraded my desktop to 11.10
+and got the same. I've then upgraded to beta 12.04 and there it works again,
+only still some rare blocks in shotcut. I will try to further debbug this, but
+the best would be to minimize glxMakeCurrent calls by implementing the 'ideal"
+model.
+
+
+
+
+-------------------------------------
+Comments, suggestions and questions
+are welcome through either mlt-devel
+or directly at:
+<Christophe Thommeret>hftom@free.fr
