@@ -274,7 +274,6 @@ void* video_thread( void *arg )
 	mlt_consumer consumer = &xgl->parent;
 	mlt_properties consumer_props = MLT_CONSUMER_PROPERTIES( consumer );
 	struct timeval start, end;
-	int skipped = 0;
 	double duration = 0;
 	
 	gettimeofday( &start, NULL );

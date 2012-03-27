@@ -121,7 +121,7 @@ static int filter_get_image( mlt_frame frame, uint8_t **image, mlt_image_format 
 	*format = mlt_image_glsl;
 	if ( mlt_frame_get_image( frame, image, format, &owidth, &oheight, writable ) )
 		return 1;
-	
+
 	glsl_texture source_tex = (glsl_texture)mlt_properties_get_data( properties, "image", NULL );
 	if ( !source_tex )
 		return 1;
