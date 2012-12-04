@@ -1396,7 +1396,7 @@ static int allocate_buffer( mlt_frame frame, AVCodecContext *codec_context, uint
 		return size;
 
 	if ( *format == mlt_image_glsl )
-		*format = pick_format( codec_context->pix_fmt );
+		*format = pick_pix_format( codec_context->pix_fmt );
 
 	*width = codec_context->width;
 	*height = codec_context->height;
