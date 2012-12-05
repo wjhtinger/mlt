@@ -104,7 +104,8 @@ int mlt_consumer_init( mlt_consumer self, void *child, mlt_profile profile )
 		mlt_properties_set( properties, "mlt_audio_format", mlt_audio_format_name( mlt_audio_s16 ) );
 
 		mlt_events_register( properties, "consumer-frame-show", ( mlt_transmitter )mlt_consumer_frame_show );
-		mlt_events_register( properties, "consumer-frame-render", ( mlt_transmitter )mlt_consumer_frame_render );
+		mlt_events_register( properties, "consumer-frame-rendered", ( mlt_transmitter )mlt_consumer_frame_render );
+		mlt_events_register( properties, "consumer-thread-started", NULL );
 		mlt_events_register( properties, "consumer-stopped", NULL );
 		mlt_events_listen( properties, self, "consumer-frame-show", ( mlt_listener )on_consumer_frame_show );
 
@@ -706,6 +707,8 @@ static void *consumer_read_ahead_thread( void *arg )
 	if ( preview_off && preview_format != 0 )
 		self->format = preview_format;
 
+	mlt_events_fire( properties, "consumer-thread-started", NULL );
+
 	// Get the first frame
 	frame = mlt_consumer_get_frame( self );
 
@@ -714,8 +717,8 @@ static void *consumer_read_ahead_thread( void *arg )
 		// Get the image of the first frame
 		if ( !video_off )
 		{
-			mlt_events_fire( MLT_CONSUMER_PROPERTIES( self ), "consumer-frame-render", frame, NULL );
 			mlt_frame_get_image( frame, &image, &self->format, &width, &height, 0 );
+			mlt_events_fire( MLT_CONSUMER_PROPERTIES( self ), "consumer-frame-rendered", frame, NULL );
 		}
 
 		if ( !audio_off )
@@ -774,8 +777,8 @@ static void *consumer_read_ahead_thread( void *arg )
 				height = mlt_properties_get_int( properties, "height" );
 
 				// Get the image
-				mlt_events_fire( MLT_CONSUMER_PROPERTIES( self ), "consumer-frame-render", frame, NULL );
 				mlt_frame_get_image( frame, &image, &self->format, &width, &height, 0 );
+				mlt_events_fire( MLT_CONSUMER_PROPERTIES( self ), "consumer-frame-rendered", frame, NULL );
 			}
 
 			// Indicate the rendered image is available.
@@ -912,6 +915,8 @@ static void *consumer_worker_thread( void *arg )
 	if ( preview_off && preview_format != 0 )
 		format = preview_format;
 
+	mlt_events_fire( properties, "consumer-thread-started", NULL );
+
 	// Continue to read ahead
 	while ( self->ahead )
 	{
@@ -953,8 +958,8 @@ static void *consumer_worker_thread( void *arg )
 			// Fetch width/height again
 			width = mlt_properties_get_int( properties, "width" );
 			height = mlt_properties_get_int( properties, "height" );
-			mlt_events_fire( MLT_CONSUMER_PROPERTIES( self ), "consumer-frame-render", frame, NULL );
 			mlt_frame_get_image( frame, &image, &format, &width, &height, 0 );
+			mlt_events_fire( MLT_CONSUMER_PROPERTIES( self ), "consumer-frame-rendered", frame, NULL );
 		}
 		mlt_properties_set_int( MLT_FRAME_PROPERTIES( frame ), "rendered", 1 );
 		mlt_frame_close( frame );

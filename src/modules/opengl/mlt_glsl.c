@@ -599,8 +599,8 @@ static void glsl_finish( glsl_env g )
 static void p_make_current_and_lock( glsl_env g )
 {
 	if ( g->user_data && g->context_make_current ) {
-		pthread_mutex_lock( &g->gl_mutex );
-		g->context_make_current( g->user_data );
+//		pthread_mutex_lock( &g->gl_mutex );
+//		g->context_make_current( g->user_data );
 		if ( !g->init_done )
 			glsl_do_init( g );
 	}
@@ -611,8 +611,8 @@ static void p_make_current_and_lock( glsl_env g )
 static void p_done_current_and_unlock( glsl_env g )
 {
 	if ( g->user_data && g->context_done_current ) {
-		g->context_done_current( g->user_data );
-		pthread_mutex_unlock( &g->gl_mutex );
+//		g->context_done_current( g->user_data );
+//		pthread_mutex_unlock( &g->gl_mutex );
 	}
 }
 
@@ -662,7 +662,7 @@ unsigned int mlt_glsl_get_texture( void *image )
 {
 	glsl_texture tex = (glsl_texture)image;
 	glsl_env g = tex->parent;
-	g->finish( g );
+//	g->finish( g );
 	return tex->texture;
 }
 

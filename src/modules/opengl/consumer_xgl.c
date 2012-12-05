@@ -142,7 +142,7 @@ static void hidden_done_current( void *user_data )
 {
 	HiddenContext *h = (HiddenContext*)user_data;
 	glXMakeCurrent( h->dpy, None, NULL );
-	fprintf(stderr, "hiddenDoneCurrent\n");
+	fprintf(stderr, "hidden_done_current\n");
 }
 
 
@@ -210,8 +210,6 @@ static void show_frame()
 {
 	fprintf(stderr,"show_frame threadID : %ld\n", syscall(SYS_gettid));
 	
-	glXMakeCurrent( GLWin.dpy, GLWin.win, GLWin.ctx );
-	
 	if ( (fb.width != new_frame.width) || (fb.height != new_frame.height) ) {
 		glDeleteFramebuffers( 1, &fb.fbo );
 		glDeleteTextures( 1, &fb.texture );
@@ -275,9 +273,12 @@ void* video_thread( void *arg )
 	mlt_properties consumer_props = MLT_CONSUMER_PROPERTIES( consumer );
 	struct timeval start, end;
 	double duration = 0;
+	int real_time = mlt_properties_get_int( consumer_props, "real_time" );
 	
 	gettimeofday( &start, NULL );
 	
+	if ( !real_time )
+		glXMakeCurrent( hiddenctx.dpy, hiddenctx.win, hiddenctx.ctx );
 	while ( vthread.running )
 	{
 		// Get a frame from the attached producer
@@ -286,8 +287,9 @@ void* video_thread( void *arg )
 		// Ensure that we have a frame
 		if ( next )
 		{
-			if ( next ) {
-				mlt_properties properties =  MLT_FRAME_PROPERTIES( next );
+			mlt_properties properties =  MLT_FRAME_PROPERTIES( next );
+			if ( mlt_properties_get_int( properties, "rendered" ) == 1 )
+			{
 				// Get the image, width and height
 				mlt_image_format vfmt = mlt_image_glsl;
 				int width = 0, height = 0;
@@ -313,20 +315,19 @@ void* video_thread( void *arg )
 				if ( duration > 0 )
 					usleep( (int)duration );
 				gettimeofday( &start, NULL );
-				
-				// This frame can now be closed
-				mlt_frame_close( next );
 			}
-
-			next = NULL;
+			else
+			{
+				static int dropped = 0;
+				mlt_log_info( MLT_CONSUMER_SERVICE(consumer), "dropped video frame %d\n", ++dropped );
+			}
 		}
 		else
 			usleep( 1000 );
-	}
-
-	if ( next != NULL )
 		mlt_frame_close( next );
-
+	}
+	if ( !real_time )
+		glXMakeCurrent( hiddenctx.dpy, None, NULL );
 	mlt_consumer_stopped( consumer );
 	
 	return NULL;
@@ -564,7 +565,16 @@ void start_xgl( consumer_xgl consumer )
 	xgl->running = 0;
 }
 
+static void on_consumer_thread_started( mlt_properties owner, mlt_consumer consumer)
+{
+	fprintf(stderr, "%s: %d\n", __FUNCTION__, syscall(SYS_gettid));
+	glXMakeCurrent( hiddenctx.dpy, hiddenctx.win, hiddenctx.ctx );
+}
 
+static void on_consumer_frame_rendered( mlt_properties owner, mlt_consumer consumer, mlt_frame frame )
+{
+	glFinish();
+}
 
 /** Forward references to static functions.
 */
@@ -634,6 +644,9 @@ mlt_consumer consumer_xgl_init( mlt_profile profile, mlt_service_type type, cons
 				mlt_properties_set_data( prop, "glsl_env", (void*)g, 0, NULL, NULL );
 			}
 		}
+
+		mlt_events_listen( this->properties, service, "consumer-thread-started", ( mlt_listener )on_consumer_thread_started );
+		mlt_events_listen( this->properties, service, "consumer-frame-rendered", ( mlt_listener )on_consumer_frame_rendered );
 
 		// Return the consumer produced
 		return parent;
