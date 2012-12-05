@@ -580,40 +580,28 @@ static void glsl_do_init( glsl_env g )
 	glShadeModel( GL_SMOOTH );
 	glEnable( GL_TEXTURE_RECTANGLE_ARB );
 	glHint( GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST );
-
-	g->init_done = 1;
 }
 
 
 
 static void glsl_finish( glsl_env g )
 {
-	g->context_lock( g );
 	glFinish();
 	fprintf(stderr,"glsl_finish -----------------------[%d]\n", syscall(SYS_gettid));
-	g->context_unlock( g );
 }
 
 
 
-static void p_make_current_and_lock( glsl_env g )
+static void p_lock( glsl_env g )
 {
-	if ( g->user_data && g->context_make_current ) {
-//		pthread_mutex_lock( &g->gl_mutex );
-//		g->context_make_current( g->user_data );
-		if ( !g->init_done )
-			glsl_do_init( g );
-	}
+	pthread_mutex_lock( &g->gl_mutex );
 }
 
 
 
-static void p_done_current_and_unlock( glsl_env g )
+static void p_unlock( glsl_env g )
 {
-	if ( g->user_data && g->context_done_current ) {
-//		g->context_done_current( g->user_data );
-//		pthread_mutex_unlock( &g->gl_mutex );
-	}
+	pthread_mutex_unlock( &g->gl_mutex );
 }
 
 
@@ -622,19 +610,14 @@ glsl_env glsl_env_create()
 {
 	glsl_env g = calloc( sizeof( struct glsl_env_s ), 1 );
 	if ( g ) {
-		g->init_done = 0;
-		
 		g->texture_list = glsl_list_create();
 		g->fbo_list = glsl_list_create();
 		g->shader_list = glsl_list_create();
 
 		g->pbo = NULL;
 		
-		g->user_data = NULL;
-		g->context_make_current = NULL;
-		g->context_done_current = NULL;
-		g->context_lock = p_make_current_and_lock;
-		g->context_unlock = p_done_current_and_unlock;
+		g->context_lock = p_lock;
+		g->context_unlock = p_unlock;
 		
 		g->get_fbo = glsl_get_fbo;
 		g->release_fbo = glsl_release_fbo;
@@ -644,6 +627,7 @@ glsl_env glsl_env_create()
 		g->texture_destructor = glsl_texture_destructor;
 		g->get_shader = glsl_get_shader;
 		
+		g->start = glsl_do_init;
 		g->finish = glsl_finish;
 
 		g->bicubic_lut = NULL;
@@ -661,8 +645,6 @@ glsl_env glsl_env_create()
 unsigned int mlt_glsl_get_texture( void *image )
 {
 	glsl_texture tex = (glsl_texture)image;
-	glsl_env g = tex->parent;
-//	g->finish( g );
 	return tex->texture;
 }
 
@@ -688,7 +670,7 @@ int mlt_glsl_supported()
 	return 1;
 }
 
-int mlt_glsl_init( void *make_current, void *done_current, void *user_data )
+int mlt_glsl_init()
 {
 	mlt_properties prop = mlt_global_properties();
 
@@ -704,10 +686,6 @@ int mlt_glsl_init( void *make_current, void *done_current, void *user_data )
 	char *extensions = glGetString( GL_EXTENSIONS );
 	if ( strstr( extensions, "ARB_texture_float" ) )
 		g->texture_float = 1;
-
-	g->context_make_current = make_current;
-	g->context_done_current = done_current;
-	g->user_data = user_data;
 
 	mlt_properties_set_data( prop, "glsl_env", (void*)g, 0, NULL, NULL );
 

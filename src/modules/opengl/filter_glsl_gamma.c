@@ -47,7 +47,7 @@ static const char *filter_glsl_gamma_frag=
 static int filter_get_image( mlt_frame frame, uint8_t **image, mlt_image_format *format, int *width, int *height, int writable )
 {
 	glsl_env g = (glsl_env)mlt_properties_get_data( mlt_global_properties(), "glsl_env", 0 );
-	if ( !g || (g && !g->user_data) )
+	if ( !g )
 		return 1;
 
 	*format = mlt_image_glsl;
@@ -59,21 +59,14 @@ static int filter_get_image( mlt_frame frame, uint8_t **image, mlt_image_format 
 
 	double gamma = mlt_properties_get_double( MLT_FRAME_PROPERTIES( frame ), "gamma" );
 
-	/* lock gl */
-	g->context_lock( g );
-
 	glsl_fbo fbo = g->get_fbo( g, *width, *height );
 	if ( !fbo ) {
-		/* unlock gl */
-		g->context_unlock( g );
 		return 1;
 	}
 
 	glsl_texture dest = g->get_texture( g, *width, *height, GL_RGBA );
 	if ( !dest ) {
 		g->release_fbo( fbo );
-		/* unlock gl */
-		g->context_unlock( g );
 		return 1;
 	}
 
@@ -81,8 +74,6 @@ static int filter_get_image( mlt_frame frame, uint8_t **image, mlt_image_format 
 	if ( !shader ) {
 		g->release_fbo( fbo );
 		g->release_texture( dest );
-		/* unlock gl */
-		g->context_unlock( g );
 		return 1;
 	}
 
@@ -103,8 +94,6 @@ static int filter_get_image( mlt_frame frame, uint8_t **image, mlt_image_format 
 	glBindFramebuffer( GL_FRAMEBUFFER, 0 );
 
 	g->release_fbo( fbo );
-	/* unlock gl */
-	g->context_unlock( g );
 
 	if ( dest ) {
 		fprintf(stderr,"filter_glsl_gamma -----------------------set_image, %u, %u [frame:%d] [%d] gamma=%f\n",

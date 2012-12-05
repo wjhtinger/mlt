@@ -113,7 +113,7 @@ mlt_repository mlt_repository_init( const char *directory )
 				{
 					int ( *mlt_glsl_supported )();
 					mlt_glsl_supported = dlsym( object, "mlt_glsl_supported" );
-					int ( *mlt_glsl_init )( void*, void*, void* );
+					int ( *mlt_glsl_init )();
 					mlt_glsl_init = dlsym( object, "mlt_glsl_init" );
 					unsigned int ( *mlt_glsl_get_texture )( void* );
 					mlt_glsl_get_texture = dlsym( object, "mlt_glsl_get_texture" );

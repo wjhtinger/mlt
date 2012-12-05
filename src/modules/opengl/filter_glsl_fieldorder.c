@@ -45,7 +45,7 @@ static const char *filter_glsl_swap_fields_frag=
 static int filter_get_image( mlt_frame frame, uint8_t **image, mlt_image_format *format, int *width, int *height, int writable )
 {
 	glsl_env g = (glsl_env)mlt_properties_get_data( mlt_global_properties(), "glsl_env", 0 );
-	if ( !g || (g && !g->user_data) )
+	if ( !g )
 		return 1;
 
 	// Get the properties from the frame
@@ -71,22 +71,15 @@ static int filter_get_image( mlt_frame frame, uint8_t **image, mlt_image_format 
 		mlt_properties_get( properties, "progressive" ) &&
 		mlt_properties_get_int( properties, "progressive" ) == 0 )
 	{
-		/* lock gl */
-		g->context_lock( g );
-		
 		if ( mlt_properties_get_int( properties, "meta.swap_fields" ) ) {
 			glsl_fbo fbo = g->get_fbo( g, *width, *height );
 			if ( !fbo ) {
-				/* unlock gl */
-				g->context_unlock( g );
 				return 1;
 			}
 
 			dest = g->get_texture( g, *width, *height, GL_RGBA );
 			if ( !dest ) {
 				g->release_fbo( fbo );
-				/* unlock gl */
-				g->context_unlock( g );
 				return 1;
 			}
 
@@ -94,8 +87,6 @@ static int filter_get_image( mlt_frame frame, uint8_t **image, mlt_image_format 
 			if ( !shader ) {
 				g->release_fbo( fbo );
 				g->release_texture( dest );
-				/* unlock gl */
-				g->context_unlock( g );
 				return 1;
 			}
 
@@ -129,8 +120,6 @@ static int filter_get_image( mlt_frame frame, uint8_t **image, mlt_image_format 
 			if ( !dest ) {
 				if ( swapped )
 					g->release_texture( source_tex );
-				/* unlock gl */
-				g->context_unlock( g );
 				return 1;
 			}
 
@@ -139,8 +128,6 @@ static int filter_get_image( mlt_frame frame, uint8_t **image, mlt_image_format 
 				if ( swapped )
 					g->release_texture( source_tex );
 				g->release_texture( dest );
-				/* unlock gl */
-				g->context_unlock( g );
 				return 1;
 			}
 
@@ -167,9 +154,6 @@ static int filter_get_image( mlt_frame frame, uint8_t **image, mlt_image_format 
 			if ( swapped )
 				g->release_texture( source_tex );
 		}
-
-		/* unlock gl */
-		g->context_unlock( g );
 
 		if ( dest ) {
 			fprintf(stderr,"filter_glsl_fieldorder -----------------------set_image, %u, %u [frame:%d] [%d]\n", (unsigned int)dest, dest->texture, mlt_properties_get_int(properties, "_position"), syscall(SYS_gettid));

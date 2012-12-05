@@ -99,20 +99,15 @@ typedef struct glsl_shader_s *glsl_shader;
 
 struct glsl_env_s
 {
-	int init_done;
-	
 	glsl_list texture_list;
 	glsl_list fbo_list;
 	glsl_list shader_list;
 
 	glsl_pbo pbo;
 	
-	void *user_data;
 	pthread_mutex_t gl_mutex;
 	void ( *context_lock )( glsl_env g );
 	void ( *context_unlock )( glsl_env g );
-	void ( *context_make_current )( void *user_data ); // callback
-	void ( *context_done_current )( void *user_data ); // callback
 
 	glsl_fbo ( *get_fbo )( glsl_env, int, int );
 	void ( *release_fbo )( glsl_fbo );
@@ -122,6 +117,7 @@ struct glsl_env_s
 	glsl_shader ( *get_shader )( glsl_env, const char*, const char** );
 	glsl_pbo ( *get_pbo )( glsl_env, int size );
 
+	void ( *start )( glsl_env );
 	void ( *finish )( glsl_env );
 
 	glsl_texture bicubic_lut;
@@ -135,7 +131,6 @@ extern glsl_texture glsl_rescale_bilinear( glsl_env g, glsl_texture source_tex, 
 extern glsl_texture glsl_rescale_bicubic( glsl_env g, glsl_texture source_tex, int iwidth, int iheight, int owidth, int oheight, int spline );
 extern void glsl_set_ortho_view( int width, int height );
 extern void glsl_draw_quad( float x1, float y1, float x2, float y2 );
-
 
 #endif /*MLT_GLSL*/
 

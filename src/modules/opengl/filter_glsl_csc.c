@@ -505,16 +505,13 @@ static int convert_image( mlt_frame frame, uint8_t **image, mlt_image_format *fo
 		return 1;
 
 	glsl_env g = (glsl_env)mlt_properties_get_data( mlt_global_properties(), "glsl_env", 0 );
-	if ( !g || (g && !g->user_data) )
+	if ( !g )
 		return 1;
 
 	glsl_texture texture = 0;
 	int release = 1;
 
 	if ( *format != mlt_image_glsl ) {
-		/* lock gl */
-		g->context_lock( g );
-	
 		if ( *format == mlt_image_rgb24a || *format == mlt_image_opengl ) { 
 			texture = rgb_to_glsl( g, *image, width, height, 1 );
 		}
@@ -528,9 +525,6 @@ static int convert_image( mlt_frame frame, uint8_t **image, mlt_image_format *fo
 			texture = yuv422_to_glsl( g, *image, width, height, colorspace );
 		}
 
-		/* unlock gl */
-		g->context_unlock( g );
-
 		if ( !texture )
 			return 1;
 	}
@@ -540,9 +534,6 @@ static int convert_image( mlt_frame frame, uint8_t **image, mlt_image_format *fo
 	}
 	
 	if ( output_format != mlt_image_glsl ) {
-		/* lock gl */
-		g->context_lock( g );
-
 		uint8_t *dest = NULL;
 		int size = 0;
 
@@ -561,9 +552,6 @@ static int convert_image( mlt_frame frame, uint8_t **image, mlt_image_format *fo
 
 		if ( release )
 			g->release_texture( texture );
-
-		/* unlock gl */
-		g->context_unlock( g );
 
 		if ( dest && size != 0 ) {
 			fprintf(stderr,"filter_glsl_csc convert_image -----------------------set_image uint8_t [frame:%d] [%d]\n", mlt_properties_get_int(MLT_FRAME_PROPERTIES( frame ), "_position"), syscall(SYS_gettid));

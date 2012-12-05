@@ -131,22 +131,6 @@ static void* video_thread( void *arg );
 
 
 
-static void hidden_make_current( void *user_data )
-{
-	HiddenContext *h = (HiddenContext*)user_data;
-	glXMakeCurrent( h->dpy, h->win, h->ctx );
-	fprintf(stderr, "hidden_make_current\n");
-}
-
-static void hidden_done_current( void *user_data )
-{
-	HiddenContext *h = (HiddenContext*)user_data;
-	glXMakeCurrent( h->dpy, None, NULL );
-	fprintf(stderr, "hidden_done_current\n");
-}
-
-
-
 static void update()
 {
 	int _width = GLWin.width;
@@ -278,7 +262,7 @@ void* video_thread( void *arg )
 	gettimeofday( &start, NULL );
 	
 	if ( !real_time )
-		glXMakeCurrent( hiddenctx.dpy, hiddenctx.win, hiddenctx.ctx );
+		mlt_events_fire( consumer_props, "consumer-thread-started", NULL );
 	while ( vthread.running )
 	{
 		// Get a frame from the attached producer
@@ -296,6 +280,8 @@ void* video_thread( void *arg )
 				uint8_t *image = 0;
 				int error = mlt_frame_get_image( next, &image, &vfmt, &width, &height, 0 );
 				if ( !error && image && width && height && !new_frame.new ) {
+					if ( !real_time )
+						mlt_events_fire( consumer_props, "consumer-frame-rendered", next, NULL );
 					GLuint tex = mlt_glsl_texture( (void*)image );
 					new_frame.width = width;
 					new_frame.height = height;
@@ -326,8 +312,6 @@ void* video_thread( void *arg )
 			usleep( 1000 );
 		mlt_frame_close( next );
 	}
-	if ( !real_time )
-		glXMakeCurrent( hiddenctx.dpy, None, NULL );
 	mlt_consumer_stopped( consumer );
 	
 	return NULL;
@@ -441,7 +425,7 @@ static void createGLWindow()
 	mlt_has_glsl = 0;
 	typedef int (*MLT_GLSL_SUPPORTED)();
 	MLT_GLSL_SUPPORTED mlt_glsl_supported;
-	typedef int (*MLT_GLSL_INIT)( void*, void*, void* );
+	typedef int (*MLT_GLSL_INIT)();
 	MLT_GLSL_INIT mlt_glsl_init;
 	mlt_properties prop = mlt_global_properties();
 	mlt_glsl_supported = (MLT_GLSL_SUPPORTED)mlt_properties_get_data( prop, "mlt_glsl_supported", NULL );
@@ -454,7 +438,7 @@ static void createGLWindow()
 			hiddenctx.screen = GLWin.screen;
 			hiddenctx.win = RootWindow( hiddenctx.dpy, hiddenctx.screen );
 			if ( mlt_glsl_supported() ) {
-				if ( mlt_glsl_init( (void*)hidden_make_current, (void*)hidden_done_current, (void*)&hiddenctx ) )
+				if ( mlt_glsl_init() )
 					mlt_has_glsl = 1;
 			}
 		}
@@ -569,11 +553,14 @@ static void on_consumer_thread_started( mlt_properties owner, mlt_consumer consu
 {
 	fprintf(stderr, "%s: %d\n", __FUNCTION__, syscall(SYS_gettid));
 	glXMakeCurrent( hiddenctx.dpy, hiddenctx.win, hiddenctx.ctx );
+	glsl_env g = (glsl_env) mlt_properties_get_data( mlt_global_properties(), "glsl_env", 0 );
+	if ( g ) g->start( g );
 }
 
 static void on_consumer_frame_rendered( mlt_properties owner, mlt_consumer consumer, mlt_frame frame )
 {
-	glFinish();
+	glsl_env g = (glsl_env) mlt_properties_get_data( mlt_global_properties(), "glsl_env", 0 );
+	if ( g ) g->finish( g );
 }
 
 /** Forward references to static functions.

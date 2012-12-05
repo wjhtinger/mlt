@@ -127,7 +127,7 @@ static glsl_texture deinterlace_onefield( glsl_env g, glsl_texture source_tex, i
 static int filter_get_image( mlt_frame this, uint8_t **image, mlt_image_format *format, int *width, int *height, int writable )
 {
 	glsl_env g = (glsl_env)mlt_properties_get_data( mlt_global_properties(), "glsl_env", 0 );
-	if ( !g || (g && !g->user_data) )
+	if ( !g )
 		return 1;
 
 	mlt_properties properties = MLT_FRAME_PROPERTIES( this );
@@ -156,9 +156,6 @@ static int filter_get_image( mlt_frame this, uint8_t **image, mlt_image_format *
 		if ( !source_tex || error )
 			return 1;
 
-		/* lock gl */
-		g->context_lock( g );
-
 		glsl_texture dest = NULL;
 
 		if ( !method_str || !strcmp( method_str, "onefield" ) )
@@ -174,9 +171,6 @@ static int filter_get_image( mlt_frame this, uint8_t **image, mlt_image_format *
 		{
 			dest = deinterlace_linearblend( g, source_tex, *width, *height );
 		}
-
-		/* unlock gl */
-		g->context_unlock( g );
 
 		if ( dest ) {
 			fprintf(stderr,"filter_glsl_deinterlace -----------------------set_image, %u, %u [frame:%d] [%d]\n", (unsigned int)dest, dest->texture, mlt_properties_get_int(MLT_FRAME_PROPERTIES( this ), "_position"), syscall(SYS_gettid));

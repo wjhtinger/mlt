@@ -39,7 +39,7 @@
 static int filter_get_image( mlt_frame frame, uint8_t **image, mlt_image_format *format, int *width, int *height, int writable )
 {
 	glsl_env g = (glsl_env)mlt_properties_get_data( mlt_global_properties(), "glsl_env", 0 );
-	if ( !g || (g && !g->user_data) )
+	if ( !g )
 		return 1;
 	
 	// Get the frame properties
@@ -116,9 +116,6 @@ static int filter_get_image( mlt_frame frame, uint8_t **image, mlt_image_format 
 		{
 			glsl_texture dest = NULL;
 			
-			/* lock gl */
-			g->context_lock( g );
-			
 			if ( !strcmp( interps, "nearest" ) || !strcmp( interps, "bilinear" ) || !g->texture_float )
 			{
 				dest = glsl_rescale_bilinear( g, source_tex, iwidth, iheight, owidth, oheight );
@@ -130,9 +127,6 @@ static int filter_get_image( mlt_frame frame, uint8_t **image, mlt_image_format 
 					spline = COS_SPLINE;
 				dest = glsl_rescale_bicubic( g, source_tex, iwidth, iheight, owidth, oheight, spline );
 			}
-
-			/* unlock gl */
-			g->context_unlock( g );
 
 			if ( dest ) {
 				fprintf(stderr,"filter_glsl_rescale -----------------------set_image, %u, %u [frame:%d] [%d] w=%d h=%d\n", (unsigned int)dest, dest->texture, mlt_properties_get_int(MLT_FRAME_PROPERTIES( frame ), "_position"), syscall(SYS_gettid), owidth, oheight);

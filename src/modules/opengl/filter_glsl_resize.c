@@ -39,7 +39,7 @@
 static int filter_get_image( mlt_frame frame, uint8_t **image, mlt_image_format *format, int *width, int *height, int writable )
 {
 	glsl_env g = (glsl_env)mlt_properties_get_data( mlt_global_properties(), "glsl_env", 0 );
-	if ( !g || (g && !g->user_data) )
+	if ( !g )
 		return 1;
 	
 	// Get the properties from the frame
@@ -136,21 +136,14 @@ static int filter_get_image( mlt_frame frame, uint8_t **image, mlt_image_format 
 		return 0;
 	}
 
-	/* lock gl */
-	g->context_lock( g );
-
 	glsl_fbo fbo = g->get_fbo( g, *width, *height );
 	if ( !fbo ) {
-		/* unlock gl */
-		g->context_unlock( g );
 		return 1;
 	}
 
 	glsl_texture dest = g->get_texture( g, *width, *height, GL_RGBA );
 	if ( !dest ) {
 		g->release_fbo( fbo );
-		/* unlock gl */
-		g->context_unlock( g );
 		return 1;
 	}
 
@@ -173,8 +166,6 @@ static int filter_get_image( mlt_frame frame, uint8_t **image, mlt_image_format 
 	glBindFramebuffer( GL_FRAMEBUFFER, 0 );
 
 	g->release_fbo( fbo );
-	/* unlock gl */
-	g->context_unlock( g );
 
 	if ( dest ) {
 		fprintf(stderr,"filter_glsl_resize -----------------------set_image, %u, %u [frame:%d] [%d] w=%d h=%d\n", (unsigned int)dest, dest->texture, mlt_properties_get_int(MLT_FRAME_PROPERTIES( frame ), "_position"), syscall(SYS_gettid), *width, *height);
