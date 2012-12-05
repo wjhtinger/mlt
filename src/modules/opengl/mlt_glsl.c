@@ -569,7 +569,7 @@ static glsl_shader glsl_get_shader( glsl_env g, const char *name, const char **s
 
 
 
-static void glsl_do_init( glsl_env g )
+static void glsl_start( glsl_env g )
 {
 	glClearColor( 0.0f, 0.0f, 0.0f, 0.0f );
 	glClearDepth( 1.0f );
@@ -627,7 +627,7 @@ glsl_env glsl_env_create()
 		g->texture_destructor = glsl_texture_destructor;
 		g->get_shader = glsl_get_shader;
 		
-		g->start = glsl_do_init;
+		g->start = glsl_start;
 		g->finish = glsl_finish;
 
 		g->bicubic_lut = NULL;
