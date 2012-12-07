@@ -354,7 +354,7 @@ static void luma_read_yuv422( uint8_t *image, uint16_t **map, int width, int hei
 
 static int transition_get_image( mlt_frame a_frame, uint8_t **image, mlt_image_format *format, int *width, int *height, int writable )
 {
-	glsl_env g = (glsl_env)mlt_properties_get_data( mlt_global_properties(), "glsl_env", 0 );
+	glsl_env g = mlt_glsl_get( mlt_service_profile( mlt_frame_get_original_producer( a_frame ) ) );
 	if ( !g )
 		return 1;
 
@@ -567,7 +567,7 @@ static mlt_frame transition_process( mlt_transition transition, mlt_frame a_fram
 
 mlt_transition transition_glsl_luma_init( mlt_profile profile, mlt_service_type type, const char *id, char *lumafile )
 {
-	if ( !mlt_properties_get_data( mlt_global_properties(), "glsl_env", 0 ) )
+	if ( !mlt_glsl_get( profile ) )
 		return NULL;
 	
 	mlt_transition transition = mlt_transition_new( );

@@ -44,7 +44,7 @@ static const char *filter_glsl_swap_fields_frag=
 
 static int filter_get_image( mlt_frame frame, uint8_t **image, mlt_image_format *format, int *width, int *height, int writable )
 {
-	glsl_env g = (glsl_env)mlt_properties_get_data( mlt_global_properties(), "glsl_env", 0 );
+	glsl_env g = mlt_glsl_get( mlt_service_profile( mlt_frame_get_original_producer( frame ) ) );
 	if ( !g )
 		return 1;
 
@@ -175,7 +175,7 @@ static mlt_frame process( mlt_filter filter, mlt_frame frame )
 
 mlt_filter filter_glsl_fieldorder_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg )
 {
-	if ( !mlt_properties_get_data( mlt_global_properties(), "glsl_env", 0 ) )
+	if ( !mlt_glsl_get( profile ) )
 		return NULL;
 	
 	mlt_filter filter = calloc( 1, sizeof( *filter ) );

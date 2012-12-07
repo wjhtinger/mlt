@@ -29,6 +29,7 @@
 #include <stdlib.h>
 
 #include <sys/syscall.h>
+#include <framework/mlt_profile.h>
 
 #define N_SPLINES 2
 #define CATMULLROM_SPLINE 	0
@@ -102,13 +103,8 @@ struct glsl_env_s
 	glsl_list texture_list;
 	glsl_list fbo_list;
 	glsl_list shader_list;
-
 	glsl_pbo pbo;
 	
-	pthread_mutex_t gl_mutex;
-	void ( *context_lock )( glsl_env g );
-	void ( *context_unlock )( glsl_env g );
-
 	glsl_fbo ( *get_fbo )( glsl_env, int, int );
 	void ( *release_fbo )( glsl_fbo );
 	glsl_texture ( *get_texture )( glsl_env, int, int, GLint );
@@ -117,16 +113,14 @@ struct glsl_env_s
 	glsl_shader ( *get_shader )( glsl_env, const char*, const char** );
 	glsl_pbo ( *get_pbo )( glsl_env, int size );
 
-	void ( *start )( glsl_env );
-	void ( *finish )( glsl_env );
-
 	glsl_texture bicubic_lut;
 	
 	int texture_float;
+	int is_started;
 };
 
 
-extern glsl_env glsl_env_create();
+extern glsl_env mlt_glsl_get( mlt_profile profile );
 extern glsl_texture glsl_rescale_bilinear( glsl_env g, glsl_texture source_tex, int iwidth, int iheight, int owidth, int oheight );
 extern glsl_texture glsl_rescale_bicubic( glsl_env g, glsl_texture source_tex, int iwidth, int iheight, int owidth, int oheight, int spline );
 extern void glsl_set_ortho_view( int width, int height );

@@ -403,7 +403,8 @@ const char * mlt_image_format_name( mlt_image_format format )
 		case mlt_image_yuv422:  return "yuv422";
 		case mlt_image_yuv420p: return "yuv420p";
 		case mlt_image_opengl:  return "opengl";
-		case mlt_image_glsl:  return "glsl";
+		case mlt_image_glsl:    return "glsl";
+		case mlt_image_glsl_texture: return "glsl_texture";
 	}
 	return "invalid";
 }

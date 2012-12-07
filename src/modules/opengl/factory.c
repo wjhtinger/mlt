@@ -26,6 +26,7 @@
 
 extern mlt_consumer consumer_xgl_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
 
+extern mlt_filter filter_glsl_manager_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
 extern mlt_filter filter_glsl_greyscale_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
 extern mlt_filter filter_glsl_csc_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
 extern mlt_filter filter_glsl_crop_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
@@ -51,6 +52,7 @@ MLT_REPOSITORY
 {
 	MLT_REGISTER( consumer_type, "xgl", consumer_xgl_init );
 	
+	MLT_REGISTER( filter_type, "glsl.manager", filter_glsl_manager_init );
 	MLT_REGISTER( filter_type, "glsl.greyscale", filter_glsl_greyscale_init );
 	MLT_REGISTER( filter_type, "glsl.csc", filter_glsl_csc_init );
 	MLT_REGISTER( filter_type, "glsl.crop", filter_glsl_crop_init );

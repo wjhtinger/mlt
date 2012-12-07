@@ -45,7 +45,8 @@ typedef enum
 	mlt_image_yuv422,  /**< 8-bit YUV 4:2:2 packed */
 	mlt_image_yuv420p, /**< 8-bit YUV 4:2:0 planar */
 	mlt_image_opengl,  /**< suitable for OpenGL texture */
-	mlt_image_glsl
+	mlt_image_glsl,
+	mlt_image_glsl_texture
 }
 mlt_image_format;
 

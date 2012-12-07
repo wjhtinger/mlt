@@ -126,14 +126,14 @@ static glsl_texture deinterlace_onefield( glsl_env g, glsl_texture source_tex, i
 
 static int filter_get_image( mlt_frame this, uint8_t **image, mlt_image_format *format, int *width, int *height, int writable )
 {
-	glsl_env g = (glsl_env)mlt_properties_get_data( mlt_global_properties(), "glsl_env", 0 );
+	// Pop the service off the stack
+	mlt_filter filter = mlt_frame_pop_service( this );
+
+	glsl_env g = mlt_glsl_get( mlt_service_profile( MLT_FILTER_SERVICE( filter ) ) );
 	if ( !g )
 		return 1;
 
 	mlt_properties properties = MLT_FRAME_PROPERTIES( this );
-
-	// Pop the service off the stack
-	mlt_filter filter = mlt_frame_pop_service( this );
 
 	// Get the input image
 	*format = mlt_image_glsl;
@@ -218,7 +218,7 @@ static void on_service_changed( mlt_service owner, mlt_service filter )
 
 mlt_filter filter_glsl_deinterlace_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg )
 {
-	if ( !mlt_properties_get_data( mlt_global_properties(), "glsl_env", 0 ) )
+	if ( !mlt_glsl_get( profile ) )
 		return NULL;
 	
 	mlt_filter this = mlt_filter_new( );

@@ -304,8 +304,9 @@ static mlt_frame filter_process( mlt_filter filter, mlt_frame frame )
 	if ( mlt_properties_get_int( properties, "colorspace" ) <= 0 )
 		mlt_properties_set_int( properties, "colorspace", mlt_service_profile( MLT_FILTER_SERVICE(filter) )->colorspace );
 
-	frame->convert_image = convert_image;
-    
+	if ( !frame->convert_image )
+		frame->convert_image = convert_image;
+
 //	Not working yet - see comment for get_image() above.
 //	mlt_frame_push_service( frame, mlt_service_profile( MLT_FILTER_SERVICE( filter ) ) );
 //	mlt_frame_push_get_image( frame, get_image );

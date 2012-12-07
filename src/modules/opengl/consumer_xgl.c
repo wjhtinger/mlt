@@ -36,10 +36,10 @@
 #include <time.h>
 #include <sys/time.h>
 #include <pthread.h>
+#include <sys/syscall.h>
 
 #include <framework/mlt.h>
 
-#include "mlt_glsl.h"
 
 #define STARTWIDTH 640
 #define STARTHEIGHT 480
@@ -113,9 +113,6 @@ typedef struct
 } GLWindow;
 
 
-typedef unsigned int (*MLT_GLSL_TEXTURE)( void* );
-MLT_GLSL_TEXTURE mlt_glsl_texture;
-	
 static GLWindow GLWin;
 static HiddenContext hiddenctx;
 
@@ -124,6 +121,7 @@ static fbo fb;
 static int mlt_has_glsl;
 static thread_video vthread;
 static consumer_xgl xgl;
+static mlt_filter glsl_manager;
 
 
 
@@ -275,17 +273,16 @@ void* video_thread( void *arg )
 			if ( mlt_properties_get_int( properties, "rendered" ) == 1 )
 			{
 				// Get the image, width and height
-				mlt_image_format vfmt = mlt_image_glsl;
+				mlt_image_format vfmt = mlt_image_glsl_texture;
 				int width = 0, height = 0;
-				uint8_t *image = 0;
-				int error = mlt_frame_get_image( next, &image, &vfmt, &width, &height, 0 );
+				GLuint *image = 0;
+				int error = mlt_frame_get_image( next, (uint8_t**) &image, &vfmt, &width, &height, 0 );
 				if ( !error && image && width && height && !new_frame.new ) {
 					if ( !real_time )
 						mlt_events_fire( consumer_props, "consumer-frame-rendered", next, NULL );
-					GLuint tex = mlt_glsl_texture( (void*)image );
 					new_frame.width = width;
 					new_frame.height = height;
-					new_frame.texture = tex;
+					new_frame.texture = *image;
 					new_frame.aspect_ratio = ((double)width / (double)height) * mlt_properties_get_double( properties, "aspect_ratio" );
 					new_frame.new = 1;
 					
@@ -422,24 +419,18 @@ static void createGLWindow()
 
 	fprintf(stderr, "Direct Rendering: %s\n",glXIsDirect( GLWin.dpy, GLWin.ctx ) ? "true" : "false" );
 	
+	// Verify GLSL works on this machine
 	mlt_has_glsl = 0;
-	typedef int (*MLT_GLSL_SUPPORTED)();
-	MLT_GLSL_SUPPORTED mlt_glsl_supported;
-	typedef int (*MLT_GLSL_INIT)();
-	MLT_GLSL_INIT mlt_glsl_init;
-	mlt_properties prop = mlt_global_properties();
-	mlt_glsl_supported = (MLT_GLSL_SUPPORTED)mlt_properties_get_data( prop, "mlt_glsl_supported", NULL );
-	mlt_glsl_init = (MLT_GLSL_INIT)mlt_properties_get_data( prop, "mlt_glsl_init", NULL );
-	mlt_glsl_texture = (MLT_GLSL_TEXTURE)mlt_properties_get_data( prop, "mlt_glsl_get_texture", NULL );
-	if ( mlt_glsl_supported && mlt_glsl_init && mlt_glsl_texture) {
-		hiddenctx.ctx = glXCreateContext( GLWin.dpy, vi, GLWin.ctx, GL_TRUE );
-		if ( hiddenctx.ctx ) {
-			hiddenctx.dpy = GLWin.dpy;
-			hiddenctx.screen = GLWin.screen;
-			hiddenctx.win = RootWindow( hiddenctx.dpy, hiddenctx.screen );
-			if ( mlt_glsl_supported() ) {
-				if ( mlt_glsl_init() )
-					mlt_has_glsl = 1;
+	if ( glsl_manager ) {
+		mlt_properties filter_props = MLT_FILTER_PROPERTIES( glsl_manager );
+		mlt_events_fire( MLT_FILTER_PROPERTIES(glsl_manager), "test glsl", NULL );
+		if ( mlt_properties_get_int( filter_props, "glsl_supported" ) ) {
+			hiddenctx.ctx = glXCreateContext( GLWin.dpy, vi, GLWin.ctx, GL_TRUE );
+			if ( hiddenctx.ctx ) {
+				hiddenctx.dpy = GLWin.dpy;
+				hiddenctx.screen = GLWin.screen;
+				hiddenctx.win = RootWindow( hiddenctx.dpy, hiddenctx.screen );
+				mlt_has_glsl = 1;
 			}
 		}
 	}
@@ -549,18 +540,18 @@ void start_xgl( consumer_xgl consumer )
 	xgl->running = 0;
 }
 
-static void on_consumer_thread_started( mlt_properties owner, mlt_consumer consumer)
+static void on_consumer_thread_started( mlt_properties owner, HiddenContext* context )
 {
 	fprintf(stderr, "%s: %d\n", __FUNCTION__, syscall(SYS_gettid));
-	glXMakeCurrent( hiddenctx.dpy, hiddenctx.win, hiddenctx.ctx );
-	glsl_env g = (glsl_env) mlt_properties_get_data( mlt_global_properties(), "glsl_env", 0 );
-	if ( g ) g->start( g );
+	// Initialize this thread's OpenGL state
+	glXMakeCurrent( context->dpy, context->win, context->ctx );
+	if ( glsl_manager )
+		mlt_events_fire( MLT_FILTER_PROPERTIES(glsl_manager), "start glsl", NULL );
 }
 
 static void on_consumer_frame_rendered( mlt_properties owner, mlt_consumer consumer, mlt_frame frame )
 {
-	glsl_env g = (glsl_env) mlt_properties_get_data( mlt_global_properties(), "glsl_env", 0 );
-	if ( g ) g->finish( g );
+	glFinish();
 }
 
 /** Forward references to static functions.
@@ -622,18 +613,13 @@ mlt_consumer consumer_xgl_init( mlt_profile profile, mlt_service_type type, cons
 		parent->stop = consumer_stop;
 		parent->is_stopped = consumer_is_stopped;
 
-		glsl_env g = glsl_env_create();
-		if ( g )
-		{
-			mlt_properties prop = mlt_global_properties();
-			if ( prop )
-			{
-				mlt_properties_set_data( prop, "glsl_env", (void*)g, 0, NULL, NULL );
-			}
-		}
+		mlt_events_listen( this->properties, &hiddenctx, "consumer-thread-started", (mlt_listener) on_consumer_thread_started );
+		mlt_events_listen( this->properties, service, "consumer-frame-rendered", (mlt_listener) on_consumer_frame_rendered );
 
-		mlt_events_listen( this->properties, service, "consumer-thread-started", ( mlt_listener )on_consumer_thread_started );
-		mlt_events_listen( this->properties, service, "consumer-frame-rendered", ( mlt_listener )on_consumer_frame_rendered );
+		// "init glsl" is required to instantiate glsl filters.
+		glsl_manager = mlt_factory_filter( profile, "glsl.manager", NULL );
+		if ( glsl_manager )
+			mlt_events_fire( MLT_FILTER_PROPERTIES(glsl_manager), "init glsl", NULL );
 
 		// Return the consumer produced
 		return parent;
@@ -718,6 +704,7 @@ static void consumer_close( mlt_consumer parent )
 
 	// Stop the consumer
 	///mlt_consumer_stop( parent );
+	mlt_filter_close( glsl_manager );
 
 	// Now clean up the rest
 	mlt_consumer_close( parent );

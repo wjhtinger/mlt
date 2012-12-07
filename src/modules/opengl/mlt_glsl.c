@@ -22,9 +22,10 @@
 
 #include <framework/mlt_properties.h>
 #include <framework/mlt_factory.h>
+#include <framework/mlt_filter.h>
+#include <framework/mlt_log.h>
 
 #include <string.h>
-#include <pthread.h>
 #include <math.h>
 
 
@@ -571,54 +572,36 @@ static glsl_shader glsl_get_shader( glsl_env g, const char *name, const char **s
 
 static void glsl_start( glsl_env g )
 {
-	glClearColor( 0.0f, 0.0f, 0.0f, 0.0f );
-	glClearDepth( 1.0f );
-	glDepthFunc( GL_LEQUAL );
-	glEnable( GL_DEPTH_TEST );
-	glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
-	glDisable( GL_BLEND );
-	glShadeModel( GL_SMOOTH );
-	glEnable( GL_TEXTURE_RECTANGLE_ARB );
-	glHint( GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST );
+	if ( g && !g->is_started )
+	{
+		g->is_started = 1;
+
+		glClearColor( 0.0f, 0.0f, 0.0f, 0.0f );
+		glClearDepth( 1.0f );
+		glDepthFunc( GL_LEQUAL );
+		glEnable( GL_DEPTH_TEST );
+		glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+		glDisable( GL_BLEND );
+		glShadeModel( GL_SMOOTH );
+		glEnable( GL_TEXTURE_RECTANGLE_ARB );
+		glHint( GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST );
+
+		// check for optionnal features
+		const char *extensions = glGetString( GL_EXTENSIONS );
+		if ( extensions && strstr( extensions, "ARB_texture_float" ) )
+			g->texture_float = 1;
+	}
 }
 
 
 
-static void glsl_finish( glsl_env g )
+static glsl_env glsl_env_create()
 {
-	glFinish();
-	fprintf(stderr,"glsl_finish -----------------------[%d]\n", syscall(SYS_gettid));
-}
-
-
-
-static void p_lock( glsl_env g )
-{
-	pthread_mutex_lock( &g->gl_mutex );
-}
-
-
-
-static void p_unlock( glsl_env g )
-{
-	pthread_mutex_unlock( &g->gl_mutex );
-}
-
-
-
-glsl_env glsl_env_create()
-{
-	glsl_env g = calloc( sizeof( struct glsl_env_s ), 1 );
+	glsl_env g = calloc( 1, sizeof( struct glsl_env_s ) );
 	if ( g ) {
 		g->texture_list = glsl_list_create();
 		g->fbo_list = glsl_list_create();
 		g->shader_list = glsl_list_create();
-
-		g->pbo = NULL;
-		
-		g->context_lock = p_lock;
-		g->context_unlock = p_unlock;
-		
 		g->get_fbo = glsl_get_fbo;
 		g->release_fbo = glsl_release_fbo;
 		g->get_pbo = glsl_get_pbo;
@@ -626,32 +609,18 @@ glsl_env glsl_env_create()
 		g->release_texture = glsl_release_texture;
 		g->texture_destructor = glsl_texture_destructor;
 		g->get_shader = glsl_get_shader;
-		
-		g->start = glsl_start;
-		g->finish = glsl_finish;
-
-		g->bicubic_lut = NULL;
-		
-		g->texture_float = 0;
-
-		pthread_mutex_init( &g->gl_mutex, NULL );
 	}
-
 	return g;
 }
 
 
 
-unsigned int mlt_glsl_get_texture( void *image )
+static int glsl_supported()
 {
-	glsl_texture tex = (glsl_texture)image;
-	return tex->texture;
-}
+	const char *extensions = glGetString( GL_EXTENSIONS );
 
-int mlt_glsl_supported()
-{
-	char *extensions = glGetString( GL_EXTENSIONS );
-
+	if ( !extensions )
+		return 0;
 	if ( !strstr( extensions, "ARB_texture_rectangle" ) )
 		return 0;
 	if ( !strstr( extensions, "ARB_texture_non_power_of_two" ) )
@@ -670,25 +639,60 @@ int mlt_glsl_supported()
 	return 1;
 }
 
-int mlt_glsl_init()
+static glsl_env glsl_init( mlt_profile profile )
 {
+	char prop_name[24];
 	mlt_properties prop = mlt_global_properties();
+	snprintf( prop_name, sizeof(prop_name), "glsl-%p", profile );
+	glsl_env g = mlt_properties_get_data( prop, prop_name, NULL );
 
-	glsl_env g = mlt_properties_get_data( prop, "glsl_env", 0 );
-	
-	if ( !g )
-		g = glsl_env_create();
-	
-	if ( !g )
-		return 0;
-	
-	// check for optionnal features
-	char *extensions = glGetString( GL_EXTENSIONS );
-	if ( strstr( extensions, "ARB_texture_float" ) )
-		g->texture_float = 1;
+	if ( !g && ( g = glsl_env_create() ) )
+	{
+		mlt_properties_set_data( prop, prop_name, g, 0, free, NULL );
+		fprintf(stderr, "mlt_glsl init done.\n");
+	}
 
-	mlt_properties_set_data( prop, "glsl_env", (void*)g, 0, NULL, NULL );
+	return g;
+}
 
-	fprintf(stderr, "mlt_glsl init done.\n");
-	return 1;
+glsl_env mlt_glsl_get( mlt_profile profile )
+{
+	char prop_name[24];
+	mlt_properties prop = mlt_global_properties();
+	snprintf( prop_name, sizeof(prop_name), "glsl-%p", profile );
+	return mlt_properties_get_data( prop, prop_name, NULL );
+}
+
+static void on_test_glsl( mlt_properties owner, mlt_filter filter )
+{
+	mlt_log_verbose( MLT_FILTER_SERVICE(filter), "%s: %d\n", __FUNCTION__, syscall(SYS_gettid) );
+	mlt_properties_set_int( MLT_FILTER_PROPERTIES( filter ), "glsl_supported", glsl_supported() );
+}
+
+static void on_init_glsl( mlt_properties owner, mlt_profile profile )
+{
+	mlt_log_verbose( NULL, "%s: %d\n", __FUNCTION__, syscall(SYS_gettid) );
+	glsl_init( profile );
+}
+
+static void on_start_glsl( mlt_properties owner, mlt_profile profile )
+{
+	mlt_log_verbose( NULL, "%s: %d\n", __FUNCTION__, syscall(SYS_gettid) );
+	glsl_start( mlt_glsl_get( profile ) );
+}
+
+mlt_filter filter_glsl_manager_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg )
+{
+	mlt_filter filter = NULL;
+	if ( ( filter = mlt_filter_new() ) )
+	{
+		mlt_properties properties = MLT_FILTER_PROPERTIES(filter);
+		mlt_events_register( properties, "test glsl", NULL );
+		mlt_events_listen( properties, filter, "test glsl", (mlt_listener) on_test_glsl );
+		mlt_events_register( properties, "init glsl", NULL );
+		mlt_events_listen( properties, profile, "init glsl", (mlt_listener) on_init_glsl );
+		mlt_events_register( properties, "start glsl", NULL );
+		mlt_events_listen( properties, profile, "start glsl", (mlt_listener) on_start_glsl );
+	}
+	return filter;
 }

@@ -38,15 +38,15 @@
 
 static int filter_get_image( mlt_frame frame, uint8_t **image, mlt_image_format *format, int *width, int *height, int writable )
 {
-	glsl_env g = (glsl_env)mlt_properties_get_data( mlt_global_properties(), "glsl_env", 0 );
+	// Get the filter from the stack
+	mlt_filter filter = mlt_frame_pop_service( frame );
+
+	glsl_env g = mlt_glsl_get( mlt_service_profile( MLT_FILTER_SERVICE( filter ) ) );
 	if ( !g )
 		return 1;
 	
 	// Get the frame properties
 	mlt_properties properties = MLT_FRAME_PROPERTIES( frame );
-
-	// Get the filter from the stack
-	mlt_filter filter = mlt_frame_pop_service( frame );
 
 	// Get the filter properties
 	mlt_properties filter_properties = MLT_FILTER_PROPERTIES( filter );
@@ -129,7 +129,8 @@ static int filter_get_image( mlt_frame frame, uint8_t **image, mlt_image_format 
 			}
 
 			if ( dest ) {
-				fprintf(stderr,"filter_glsl_rescale -----------------------set_image, %u, %u [frame:%d] [%d] w=%d h=%d\n", (unsigned int)dest, dest->texture, mlt_properties_get_int(MLT_FRAME_PROPERTIES( frame ), "_position"), syscall(SYS_gettid), owidth, oheight);
+				fprintf(stderr,"filter_glsl_rescale -----------------------set_image, %u, %u [frame:%d] [%d] w=%d h=%d g->texture_float=%d\n",
+					(unsigned int)dest, dest->texture, mlt_properties_get_int(MLT_FRAME_PROPERTIES( frame ), "_position"), syscall(SYS_gettid), owidth, oheight, g->texture_float);
 				mlt_frame_set_image( frame, (uint8_t*)dest, sizeof(struct glsl_texture_s), g->texture_destructor );
 				*image = (uint8_t*)dest;
 			}
@@ -168,7 +169,7 @@ static mlt_frame filter_process( mlt_filter filter, mlt_frame frame )
 
 mlt_filter filter_glsl_rescale_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg )
 {
-	if ( !mlt_properties_get_data( mlt_global_properties(), "glsl_env", 0 ) )
+	if ( !mlt_glsl_get( profile ) )
 		return NULL;
 	
 	// Create a new scaler

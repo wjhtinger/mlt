@@ -504,7 +504,7 @@ static int convert_image( mlt_frame frame, uint8_t **image, mlt_image_format *fo
 	if ( *format == output_format )
 		return 1;
 
-	glsl_env g = (glsl_env)mlt_properties_get_data( mlt_global_properties(), "glsl_env", 0 );
+	glsl_env g = mlt_glsl_get( mlt_service_profile( mlt_frame_get_original_producer( frame ) ) );
 	if ( !g )
 		return 1;
 
@@ -549,6 +549,13 @@ static int convert_image( mlt_frame frame, uint8_t **image, mlt_image_format *fo
 		else if ( output_format == mlt_image_rgb24a || output_format == mlt_image_opengl ) {
 			dest = glsl_to_rgb( g, texture, &size, width, height, 1 );
 		}
+		else if ( output_format == mlt_image_glsl_texture ) {
+			dest = (uint8_t*) &texture->texture;
+			mlt_frame_set_image( frame, dest, size, NULL );
+			*image = dest;
+			mlt_properties_set_int( properties, "format", output_format );
+			*format = output_format;
+		}
 
 		if ( release )
 			g->release_texture( texture );
@@ -585,6 +592,9 @@ static int convert_image( mlt_frame frame, uint8_t **image, mlt_image_format *fo
 
 static mlt_frame filter_process( mlt_filter filter, mlt_frame frame )
 {
+	if ( !mlt_glsl_get( mlt_service_profile( MLT_FILTER_SERVICE( filter ) ) ) )
+		return frame;
+	
 	// Set a default colorspace on the frame if not yet set by the producer.
 	// The producer may still change it during get_image.
 	// This way we do not have to modify each producer to set a valid colorspace.
@@ -603,7 +613,7 @@ static mlt_frame filter_process( mlt_filter filter, mlt_frame frame )
 mlt_filter filter_glsl_csc_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg )
 {
 	fprintf(stderr,"filter_glsl_csc_init -----------------------\n");
-	if ( !mlt_properties_get_data( mlt_global_properties(), "glsl_env", 0 ) )
+	if ( !mlt_glsl_get( profile ) )
 		return NULL;
 	
 	mlt_filter filter = mlt_filter_new( );
