@@ -605,7 +605,7 @@ mlt_consumer consumer_xgl_init( mlt_profile profile, mlt_service_type type, cons
 		parent->is_stopped = consumer_is_stopped;
 
 		// "init glsl" is required to instantiate glsl filters.
-		glsl_manager = mlt_factory_filter( profile, "xglsl.manager", NULL );
+		glsl_manager = mlt_factory_filter( profile, "glsl.manager", NULL );
 		if ( glsl_manager ) {
 			mlt_events_listen( this->properties, &hiddenctx, "consumer-thread-started", (mlt_listener) on_consumer_thread_started );
 			mlt_events_listen( this->properties, service, "consumer-frame-rendered", (mlt_listener) on_consumer_frame_rendered );
