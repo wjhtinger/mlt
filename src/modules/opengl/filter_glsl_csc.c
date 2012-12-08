@@ -536,6 +536,7 @@ static int convert_image( mlt_frame frame, uint8_t **image, mlt_image_format *fo
 	if ( output_format != mlt_image_glsl ) {
 		uint8_t *dest = NULL;
 		int size = 0;
+		mlt_destructor destructor = mlt_pool_release;
 
 		if ( output_format == mlt_image_yuv422 ) {
 			dest = glsl_to_yuv422( g, texture, &size, width, height, colorspace );
@@ -550,11 +551,11 @@ static int convert_image( mlt_frame frame, uint8_t **image, mlt_image_format *fo
 			dest = glsl_to_rgb( g, texture, &size, width, height, 1 );
 		}
 		else if ( output_format == mlt_image_glsl_texture ) {
+			if ( !mlt_properties_get_int( properties, "rendered" ) )
+				glFinish();
 			dest = (uint8_t*) &texture->texture;
-			mlt_frame_set_image( frame, dest, size, NULL );
-			*image = dest;
-			mlt_properties_set_int( properties, "format", output_format );
-			*format = output_format;
+			destructor = NULL;
+			size = sizeof(dest);
 		}
 
 		if ( release )
@@ -562,7 +563,7 @@ static int convert_image( mlt_frame frame, uint8_t **image, mlt_image_format *fo
 
 		if ( dest && size != 0 ) {
 			fprintf(stderr,"filter_glsl_csc convert_image -----------------------set_image uint8_t [frame:%d] [%d]\n", mlt_properties_get_int(MLT_FRAME_PROPERTIES( frame ), "_position"), syscall(SYS_gettid));
-			mlt_frame_set_image( frame, dest, size, mlt_pool_release );
+			mlt_frame_set_image( frame, dest, size, destructor );
 			*image = dest;
 			mlt_properties_set_int( properties, "format", output_format );
 			*format = output_format;

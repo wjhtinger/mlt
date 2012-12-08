@@ -128,7 +128,6 @@ static mlt_filter glsl_manager;
 static void* video_thread( void *arg );
 
 
-
 static void update()
 {
 	int _width = GLWin.width;
@@ -276,8 +275,6 @@ void* video_thread( void *arg )
 				GLuint *image = 0;
 				int error = mlt_frame_get_image( next, (uint8_t**) &image, &vfmt, &width, &height, 0 );
 				if ( !error && image && width && height && !new_frame.new ) {
-					if ( !real_time )
-						mlt_events_fire( consumer_props, "consumer-frame-rendered", next, NULL );
 					new_frame.width = width;
 					new_frame.height = height;
 					new_frame.texture = *image;
