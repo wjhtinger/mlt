@@ -127,7 +127,6 @@ static mlt_filter glsl_manager;
 
 static void* video_thread( void *arg );
 
-
 static void update()
 {
 	int _width = GLWin.width;
@@ -416,17 +415,15 @@ static void createGLWindow()
 	
 	// Verify GLSL works on this machine
 	mlt_has_glsl = 0;
-	if ( glsl_manager ) {
-		mlt_properties filter_props = MLT_FILTER_PROPERTIES( glsl_manager );
-		mlt_events_fire( MLT_FILTER_PROPERTIES(glsl_manager), "test glsl", NULL );
-		if ( mlt_properties_get_int( filter_props, "glsl_supported" ) ) {
-			hiddenctx.ctx = glXCreateContext( GLWin.dpy, vi, GLWin.ctx, GL_TRUE );
-			if ( hiddenctx.ctx ) {
-				hiddenctx.dpy = GLWin.dpy;
-				hiddenctx.screen = GLWin.screen;
-				hiddenctx.win = RootWindow( hiddenctx.dpy, hiddenctx.screen );
-				mlt_has_glsl = 1;
-			}
+	mlt_properties filter_props = MLT_FILTER_PROPERTIES( glsl_manager );
+	mlt_events_fire( MLT_FILTER_PROPERTIES(glsl_manager), "test glsl", NULL );
+	if ( mlt_properties_get_int( filter_props, "glsl_supported" ) ) {
+		hiddenctx.ctx = glXCreateContext( GLWin.dpy, vi, GLWin.ctx, GL_TRUE );
+		if ( hiddenctx.ctx ) {
+			hiddenctx.dpy = GLWin.dpy;
+			hiddenctx.screen = GLWin.screen;
+			hiddenctx.win = RootWindow( hiddenctx.dpy, hiddenctx.screen );
+			mlt_has_glsl = 1;
 		}
 	}
 	
@@ -540,8 +537,7 @@ static void on_consumer_thread_started( mlt_properties owner, HiddenContext* con
 	fprintf(stderr, "%s: %d\n", __FUNCTION__, syscall(SYS_gettid));
 	// Initialize this thread's OpenGL state
 	glXMakeCurrent( context->dpy, context->win, context->ctx );
-	if ( glsl_manager )
-		mlt_events_fire( MLT_FILTER_PROPERTIES(glsl_manager), "start glsl", NULL );
+	mlt_events_fire( MLT_FILTER_PROPERTIES(glsl_manager), "start glsl", NULL );
 }
 
 static void on_consumer_frame_rendered( mlt_properties owner, mlt_consumer consumer, mlt_frame frame )
@@ -608,13 +604,16 @@ mlt_consumer consumer_xgl_init( mlt_profile profile, mlt_service_type type, cons
 		parent->stop = consumer_stop;
 		parent->is_stopped = consumer_is_stopped;
 
-		mlt_events_listen( this->properties, &hiddenctx, "consumer-thread-started", (mlt_listener) on_consumer_thread_started );
-		mlt_events_listen( this->properties, service, "consumer-frame-rendered", (mlt_listener) on_consumer_frame_rendered );
-
 		// "init glsl" is required to instantiate glsl filters.
-		glsl_manager = mlt_factory_filter( profile, "glsl.manager", NULL );
-		if ( glsl_manager )
+		glsl_manager = mlt_factory_filter( profile, "xglsl.manager", NULL );
+		if ( glsl_manager ) {
+			mlt_events_listen( this->properties, &hiddenctx, "consumer-thread-started", (mlt_listener) on_consumer_thread_started );
+			mlt_events_listen( this->properties, service, "consumer-frame-rendered", (mlt_listener) on_consumer_frame_rendered );
 			mlt_events_fire( MLT_FILTER_PROPERTIES(glsl_manager), "init glsl", NULL );
+		} else {
+			mlt_consumer_close( parent );
+			parent = NULL;
+		}
 
 		// Return the consumer produced
 		return parent;
