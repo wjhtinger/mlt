@@ -1384,6 +1384,11 @@ mlt_frame mlt_consumer_rt_frame( mlt_consumer self )
 	}
 	else // real_time == 0
 	{
+		if ( !self->ahead )
+		{
+			self->ahead = 1;
+			mlt_events_fire( properties, "consumer-thread-started", NULL );
+		}
 		// Get the frame in non real time
 		frame = mlt_consumer_get_frame( self );
 

@@ -259,8 +259,6 @@ void* video_thread( void *arg )
 	
 	gettimeofday( &start, NULL );
 	
-	if ( !real_time )
-		mlt_events_fire( consumer_props, "consumer-thread-started", NULL );
 	while ( vthread.running )
 	{
 		// Get a frame from the attached producer
