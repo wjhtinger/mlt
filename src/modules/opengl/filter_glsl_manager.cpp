@@ -25,7 +25,13 @@ class GlslManager : public Mlt::Filter
 public:
 	GlslManager() : Mlt::Filter( mlt_filter_new() )
 	{
-		if ( get_filter() ) {
+		mlt_filter filter = get_filter();
+		if ( filter ) {
+			// Mlt::Filter() adds a reference that we do not need.
+			mlt_filter_close( filter );
+			// Set the mlt_filter child in case we choose to override virtual functions.
+			filter->child = this;
+
 			mlt_events_register( get_properties(), "test glsl", NULL );
 			mlt_events_register( get_properties(), "init glsl", NULL );
 			mlt_events_register( get_properties(), "start glsl", NULL );
