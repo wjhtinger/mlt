@@ -23,9 +23,11 @@ OBJS = factory.o \
 	filter_glsl_gamma.o \
 	transition_glsl_luma.o
 
+CPPOBJS = 	filter_glsl_manager.o
+
 CXXFLAGS += $(CFLAGS) $(QTCXXFLAGS) -Wno-deprecated
 
-LDFLAGS += $(XLIBS)
+LDFLAGS += $(XLIBS) -L../../mlt++ -lmlt++
 
 SRCS := $(OBJS:.o=.c) $(CPPOBJS:.o=.cpp)
 

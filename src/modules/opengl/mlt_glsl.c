@@ -570,7 +570,7 @@ static glsl_shader glsl_get_shader( glsl_env g, const char *name, const char **s
 
 
 
-static void glsl_start( glsl_env g )
+void mlt_glsl_start( glsl_env g )
 {
 	if ( g && !g->is_started )
 	{
@@ -615,7 +615,7 @@ static glsl_env glsl_env_create()
 
 
 
-static int glsl_supported()
+int mlt_glsl_supported()
 {
 	const char *extensions = glGetString( GL_EXTENSIONS );
 
@@ -639,7 +639,7 @@ static int glsl_supported()
 	return 1;
 }
 
-static glsl_env glsl_init( mlt_profile profile )
+glsl_env mlt_glsl_init( mlt_profile profile )
 {
 	char prop_name[24];
 	mlt_properties prop = mlt_global_properties();
@@ -661,38 +661,4 @@ glsl_env mlt_glsl_get( mlt_profile profile )
 	mlt_properties prop = mlt_global_properties();
 	snprintf( prop_name, sizeof(prop_name), "glsl-%p", profile );
 	return mlt_properties_get_data( prop, prop_name, NULL );
-}
-
-static void on_test_glsl( mlt_properties owner, mlt_filter filter )
-{
-	mlt_log_verbose( MLT_FILTER_SERVICE(filter), "%s: %d\n", __FUNCTION__, syscall(SYS_gettid) );
-	mlt_properties_set_int( MLT_FILTER_PROPERTIES( filter ), "glsl_supported", glsl_supported() );
-}
-
-static void on_init_glsl( mlt_properties owner, mlt_profile profile )
-{
-	mlt_log_verbose( NULL, "%s: %d\n", __FUNCTION__, syscall(SYS_gettid) );
-	glsl_init( profile );
-}
-
-static void on_start_glsl( mlt_properties owner, mlt_profile profile )
-{
-	mlt_log_verbose( NULL, "%s: %d\n", __FUNCTION__, syscall(SYS_gettid) );
-	glsl_start( mlt_glsl_get( profile ) );
-}
-
-mlt_filter filter_glsl_manager_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg )
-{
-	mlt_filter filter = NULL;
-	if ( ( filter = mlt_filter_new() ) )
-	{
-		mlt_properties properties = MLT_FILTER_PROPERTIES(filter);
-		mlt_events_register( properties, "test glsl", NULL );
-		mlt_events_listen( properties, filter, "test glsl", (mlt_listener) on_test_glsl );
-		mlt_events_register( properties, "init glsl", NULL );
-		mlt_events_listen( properties, profile, "init glsl", (mlt_listener) on_init_glsl );
-		mlt_events_register( properties, "start glsl", NULL );
-		mlt_events_listen( properties, profile, "start glsl", (mlt_listener) on_start_glsl );
-	}
-	return filter;
 }

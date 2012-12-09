@@ -27,9 +27,11 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <unistd.h>
 #include <sys/syscall.h>
+
 #include <framework/mlt_profile.h>
+
 
 #define N_SPLINES 2
 #define CATMULLROM_SPLINE 	0
@@ -119,12 +121,23 @@ struct glsl_env_s
 	int is_started;
 };
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 
+extern int mlt_glsl_supported();
+extern glsl_env mlt_glsl_init( mlt_profile profile );
+extern void mlt_glsl_start( glsl_env g );
 extern glsl_env mlt_glsl_get( mlt_profile profile );
 extern glsl_texture glsl_rescale_bilinear( glsl_env g, glsl_texture source_tex, int iwidth, int iheight, int owidth, int oheight );
 extern glsl_texture glsl_rescale_bicubic( glsl_env g, glsl_texture source_tex, int iwidth, int iheight, int owidth, int oheight, int spline );
 extern void glsl_set_ortho_view( int width, int height );
 extern void glsl_draw_quad( float x1, float y1, float x2, float y2 );
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /*MLT_GLSL*/
 
