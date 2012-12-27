@@ -24,8 +24,7 @@ OBJS = factory.o \
 	transition_glsl_luma.o
 
 CPPOBJS = 	filter_glsl_manager.o
-
-CXXFLAGS += $(CFLAGS) $(QTCXXFLAGS) -Wno-deprecated
+CXXFLAGS += $(CFLAGS) -Wno-deprecated
 
 LDFLAGS += $(XLIBS) -L../../mlt++ -lmlt++
 
