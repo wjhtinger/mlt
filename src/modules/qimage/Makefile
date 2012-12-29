@@ -1,6 +1,6 @@
 CFLAGS += -I../..
 
-LDFLAGS += -L../../framework -lmlt -lpthread -lm -lGL -L ../../mlt++ -lmlt++
+LDFLAGS += -L../../framework -lmlt -lpthread -lm -L../../mlt++ -lmlt++
 
 include ../../../config.mak
 include config.mak
@@ -20,6 +20,16 @@ endif
 CXXFLAGS += $(CFLAGS) $(QTCXXFLAGS) $(EXIFCXXFLAGS) $(KDECXXFLAGS) -Wno-deprecated
 
 LDFLAGS += $(QTLIBS) $(EXIFLIBS) $(KDELIBS)
+
+ifeq ($(targetos), MinGW)
+else
+ifeq ($(targetos), Darwin)
+	CFLAGS += -FOpenGL
+	LDFLAGS += -framework OpenGL
+else
+	LDFLAGS += -lGL
+endif
+endif
 
 ifdef USE_KDE3
 LDFLAGS += -lkio

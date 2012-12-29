@@ -1,15 +1,13 @@
 CFLAGS += -I../..
 
-LDFLAGS += -L../../framework -lmlt -lpthread -lm -lGL
+LDFLAGS += -L../../framework -lmlt -lm
 
 include ../../../config.mak
-include config.mak
 
 TARGET = ../libmltopengl$(LIBSUF)
 
 OBJS = factory.o \
 	mlt_glsl.o \
-	consumer_xgl.o \
 	filter_glsl_greyscale.o \
 	filter_glsl_csc.o \
 	filter_glsl_crop.o \
@@ -24,9 +22,21 @@ OBJS = factory.o \
 	transition_glsl_luma.o
 
 CPPOBJS = 	filter_glsl_manager.o
+
+ifeq ($(targetos), MinGW)
+else
+ifeq ($(targetos), Darwin)
+	CFLAGS += -FOpenGL
+	LDFLAGS += -framework OpenGL
+else
+	OBJS += consumer_xgl.o
+	LDFLAGS += -lpthread -lGL -lX11
+endif
+endif
+
 CXXFLAGS += $(CFLAGS) -Wno-deprecated
 
-LDFLAGS += $(XLIBS) -L../../mlt++ -lmlt++
+LDFLAGS += -L../../mlt++ -lmlt++
 
 SRCS := $(OBJS:.o=.c) $(CPPOBJS:.o=.cpp)
 

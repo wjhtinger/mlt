@@ -21,9 +21,21 @@
 #ifndef MLT_GLSL
 #define MLT_GLSL
 
-#define GL_GLEXT_PROTOTYPES
-#include <GL/gl.h>
-#include <GL/glext.h>
+#if defined(__DARWIN__)
+#   include <OpenGL/gl.h>
+#   include <OpenGL/glext.h>
+//  XXX: GL_RGBA32F is a part of <OpenGL/gl3.h>, but we are not supposed to include it.
+#   define GL_RGBA32F (0x8814)
+#elif defined(WIN32)
+// TODO: to be confirmed
+#   include "GLee/GLee.h"
+#   include <GL/gl.h>
+#   include <GL/glext.h>
+#else
+#   define GL_GLEXT_PROTOTYPES
+#   include <GL/gl.h>
+#   include <GL/glext.h>
+#endif
 
 #include <stdio.h>
 #include <stdlib.h>

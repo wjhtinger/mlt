@@ -1,3 +1,22 @@
 #!/bin/sh
 
-echo "XLIBS=-lX11" > config.mak
+if [ "$help" != "1" ]
+then
+#	TODO: test for OpenGL
+#	if [ ! $(pkg-config libdv) ]
+#	then
+#		echo "- libdv not found: disabling"
+#		touch ../disable-dv
+#		exit 0
+#	fi
+
+	echo > config.mak
+	case $targetos in
+	Darwin)
+		;;
+	MinGW)
+		;;
+	*)
+		;;
+	esac
+fi
