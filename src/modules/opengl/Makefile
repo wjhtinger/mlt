@@ -24,6 +24,8 @@ OBJS = factory.o \
 CPPOBJS = 	filter_glsl_manager.o
 
 ifeq ($(targetos), MinGW)
+	OBJS += GLee/GLee.o
+	LDFLAGS += -lopengl32
 else
 ifeq ($(targetos), Darwin)
 	CFLAGS += -FOpenGL

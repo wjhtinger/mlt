@@ -25,6 +25,9 @@
 #include <QtCore/QThread>
 #include <QtOpenGL/QGLWidget>
 #include <stdio.h>
+#if defined(WIN32)
+#include <GL/gl.h>
+#endif
 
 class QGlslConsumer : public QThread, public Mlt::Consumer
 {

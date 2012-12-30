@@ -109,7 +109,7 @@ else
 			elif [ -f "$qimage_libdir/libQtCore4.a" ]
 			then
 				echo QTCXXFLAGS=-I$qimage_includedir >> config.mak
-				echo QTLIBS=-Wl,-enable-auto-import -L$qimage_libdir -lQtCore4 -lQtGui4 -lQtXml4 -lQtSvg4 -lQtOpenGL >> config.mak
+				echo QTLIBS=-Wl,-enable-auto-import -L$qimage_libdir -lQtCore4 -lQtGui4 -lQtXml4 -lQtSvg4 -lQtOpenGL4 >> config.mak
 			else
 				echo QTCXXFLAGS=-I$qimage_includedir >> config.mak
 				echo QTLIBS=-L$qimage_libdir -lQtCore -lQtGui -lQtXml -lQtSvg -lQtOpenGL >> config.mak

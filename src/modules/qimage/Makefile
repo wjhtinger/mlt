@@ -22,6 +22,7 @@ CXXFLAGS += $(CFLAGS) $(QTCXXFLAGS) $(EXIFCXXFLAGS) $(KDECXXFLAGS) -Wno-deprecat
 LDFLAGS += $(QTLIBS) $(EXIFLIBS) $(KDELIBS)
 
 ifeq ($(targetos), MinGW)
+	LDFLAGS += -lopengl32
 else
 ifeq ($(targetos), Darwin)
 	CFLAGS += -FOpenGL

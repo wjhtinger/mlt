@@ -27,10 +27,7 @@
 //  XXX: GL_RGBA32F is a part of <OpenGL/gl3.h>, but we are not supposed to include it.
 #   define GL_RGBA32F (0x8814)
 #elif defined(WIN32)
-// TODO: to be confirmed
 #   include "GLee/GLee.h"
-#   include <GL/gl.h>
-#   include <GL/glext.h>
 #else
 #   define GL_GLEXT_PROTOTYPES
 #   include <GL/gl.h>
@@ -40,7 +37,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#ifdef WIN32
+#define SYS_gettid (224)
+#define syscall(X) (((X == SYS_gettid) && GetCurrentThreadId()) || 0)
+#else
 #include <sys/syscall.h>
+#endif
 
 #include <framework/mlt_profile.h>
 
