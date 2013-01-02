@@ -38,6 +38,7 @@
 #if LIBAVUTIL_VERSION_INT >= ((50<<16)+(38<<8)+0)
 #  include <libavutil/samplefmt.h>
 #else
+#  define AV_SAMPLE_FMT_U8  SAMPLE_FMT_U8
 #  define AV_SAMPLE_FMT_S16 SAMPLE_FMT_S16
 #  define AV_SAMPLE_FMT_S32 SAMPLE_FMT_S32
 #  define AV_SAMPLE_FMT_FLT SAMPLE_FMT_FLT
@@ -124,6 +125,7 @@ struct producer_avformat_s
 	mlt_deque vpackets;
 	pthread_mutex_t packets_mutex;
 	pthread_mutex_t open_mutex;
+	int is_mutex_init;
 #ifdef VDPAU
 	struct
 	{
@@ -155,6 +157,7 @@ static void producer_set_up_audio( producer_avformat self, mlt_frame frame );
 static void apply_properties( void *obj, mlt_properties properties, int flags );
 static int video_codec_init( producer_avformat self, int index, mlt_properties properties );
 static void get_audio_streams_info( producer_avformat self );
+static mlt_audio_format pick_audio_format( int sample_fmt );
 
 #ifdef VDPAU
 #include "vdpau.c"
@@ -193,16 +196,6 @@ mlt_producer producer_avformat_init( mlt_profile profile, const char *service, c
 
 			// Register our get_frame implementation
 			producer->get_frame = producer_get_frame;
-
-			// init mutexes
-			pthread_mutex_init( &self->audio_mutex, NULL );
-			pthread_mutex_init( &self->video_mutex, NULL );
-			pthread_mutex_init( &self->packets_mutex, NULL );
-			pthread_mutex_init( &self->open_mutex, NULL );
-
-			// init queues
-			self->apackets = mlt_deque_init();
-			self->vpackets = mlt_deque_init();
 
 			if ( strcmp( service, "avformat-novalidate" ) )
 			{
@@ -381,8 +374,9 @@ static mlt_properties find_default_streams( producer_avformat self )
 				if ( !codec_context->channels )
 					break;
 				// Use first audio stream
-				if ( self->audio_index < 0 )
+				if ( self->audio_index < 0 && pick_audio_format( codec_context->sample_fmt ) != mlt_audio_none )
 					self->audio_index = i;
+
 				mlt_properties_set( meta_media, key, "audio" );
 #if LIBAVUTIL_VERSION_INT >= ((50<<16)+(38<<8)+0)
 				snprintf( key, sizeof(key), "meta.media.%d.codec.sample_fmt", i );
@@ -841,6 +835,14 @@ static int producer_open( producer_avformat self, mlt_profile profile, const cha
 	// Lock the service
 	if ( take_lock )
 	{
+		if ( !self->is_mutex_init )
+		{
+			pthread_mutex_init( &self->audio_mutex, NULL );
+			pthread_mutex_init( &self->video_mutex, NULL );
+			pthread_mutex_init( &self->packets_mutex, NULL );
+			pthread_mutex_init( &self->open_mutex, NULL );
+			self->is_mutex_init = 1;
+		}
 		pthread_mutex_lock( &self->audio_mutex );
 		pthread_mutex_lock( &self->video_mutex );
 	}
@@ -957,6 +959,11 @@ static int producer_open( producer_avformat self, mlt_profile profile, const cha
 	}
 	if ( filename )
 		free( filename );
+	if ( !error )
+	{
+		self->apackets = mlt_deque_init();
+		self->vpackets = mlt_deque_init();
+	}
 
 	if ( self->dummy_context )
 	{
@@ -1246,11 +1253,13 @@ static mlt_image_format pick_pix_format( enum PixelFormat pix_fmt )
 	}
 }
 
-static mlt_audio_format pick_audio_format( enum AVSampleFormat sample_fmt )
+static mlt_audio_format pick_audio_format( int sample_fmt )
 {
 	switch ( sample_fmt )
 	{
 	// interleaved
+	case AV_SAMPLE_FMT_U8:
+		return mlt_audio_u8;
 	case AV_SAMPLE_FMT_S16:
 		return mlt_audio_s16;
 	case AV_SAMPLE_FMT_S32:
@@ -1259,6 +1268,8 @@ static mlt_audio_format pick_audio_format( enum AVSampleFormat sample_fmt )
 		return mlt_audio_f32le;
 	// planar - this producer converts planar to interleaved
 #if LIBAVUTIL_VERSION_INT >= ((51<<16)+(17<<8)+0)
+	case AV_SAMPLE_FMT_U8P:
+		return mlt_audio_u8;
 	case AV_SAMPLE_FMT_S16P:
 		return mlt_audio_s16;
 	case AV_SAMPLE_FMT_S32P:
@@ -1938,14 +1949,6 @@ static int video_codec_init( producer_avformat self, int index, mlt_properties p
 		double source_fps = (double) self->video_codec->time_base.den /
 								   ( self->video_codec->time_base.num == 0 ? 1 : self->video_codec->time_base.num );
 		
-		if ( mlt_properties_get( properties, "force_fps" ) )
-		{
-			source_fps = mlt_properties_get_double( properties, "force_fps" );
-			stream->time_base = av_d2q( source_fps, 1024 );
-			mlt_properties_set_int( properties, "meta.media.frame_rate_num", stream->time_base.num );
-			mlt_properties_set_int( properties, "meta.media.frame_rate_den", stream->time_base.den );
-		}
-		else
 		{
 			// If the muxer reports a frame rate different than the codec
 #if LIBAVFORMAT_VERSION_INT >= ((52<<16)+(42<<8)+0)
@@ -1984,6 +1987,15 @@ static int video_codec_init( producer_avformat self, int index, mlt_properties p
 				mlt_properties_set_int( properties, "meta.media.frame_rate_num", frame_rate.num );
 				mlt_properties_set_int( properties, "meta.media.frame_rate_den", frame_rate.den );
 			}
+		}
+		if ( mlt_properties_get( properties, "force_fps" ) )
+		{
+			double source_fps = mlt_properties_get_double( properties, "force_fps" );
+			AVRational fps = av_d2q( source_fps, 1024 );
+			stream->time_base.num *= mlt_properties_get_int( properties, "meta.media.frame_rate_num" ) * fps.den;
+			stream->time_base.den *= mlt_properties_get_int( properties, "meta.media.frame_rate_den" ) * fps.num;
+			mlt_properties_set_int( properties, "meta.media.frame_rate_num", fps.num );
+			mlt_properties_set_int( properties, "meta.media.frame_rate_den", fps.den );
 		}
 
 		// Set the YUV colorspace from override or detect
@@ -2244,6 +2256,7 @@ static int decode_audio( producer_avformat self, int *ignore, AVPacket pkt, int 
 				switch ( codec_context->sample_fmt )
 				{
 #if LIBAVUTIL_VERSION_INT >= ((51<<16)+(17<<8)+0)
+				case AV_SAMPLE_FMT_U8P:
 				case AV_SAMPLE_FMT_S16P:
 				case AV_SAMPLE_FMT_S32P:
 				case AV_SAMPLE_FMT_FLTP:
@@ -2394,7 +2407,7 @@ static int producer_get_audio( mlt_frame frame, void **buffer, mlt_audio_format 
 	}
 
 	// Get the audio if required
-	if ( !paused )
+	if ( !paused && *frequency > 0 )
 	{
 		int ret	= 0;
 		int got_audio = 0;
@@ -2651,6 +2664,11 @@ static void producer_set_up_audio( producer_avformat self, mlt_frame frame )
 		index = self->audio_index;
 		mlt_properties_set_int( properties, "audio_index", index );
 	}
+	if ( context && index > -1 && index < INT_MAX &&
+		 pick_audio_format( context->streams[ index ]->codec->sample_fmt ) == mlt_audio_none )
+	{
+		index = -1;
+	}
 
 	// Update the audio properties if the index changed
 	if ( context && index > -1 && index != self->audio_index )
@@ -2682,8 +2700,8 @@ static void producer_set_up_audio( producer_avformat self, mlt_frame frame )
 		// Set the frame properties
 		if ( index < MAX_AUDIO_STREAMS )
 		{
-			mlt_properties_set_int( frame_properties, "frequency", self->audio_codec[ index ]->sample_rate );
-			mlt_properties_set_int( frame_properties, "channels", self->audio_codec[ index ]->channels );
+			mlt_properties_set_int( frame_properties, "audio_frequency", self->audio_codec[ index ]->sample_rate );
+			mlt_properties_set_int( frame_properties, "audio_channels", self->audio_codec[ index ]->channels );
 		}
 	}
 	if ( context && index > -1 )
@@ -2792,10 +2810,13 @@ static void producer_avformat_close( producer_avformat self )
 		mlt_cache_close( self->image_cache );
 
 	// Cleanup the mutexes
-	pthread_mutex_destroy( &self->audio_mutex );
-	pthread_mutex_destroy( &self->video_mutex );
-	pthread_mutex_destroy( &self->packets_mutex );
-	pthread_mutex_destroy( &self->open_mutex );
+	if ( self->is_mutex_init )
+	{
+		pthread_mutex_destroy( &self->audio_mutex );
+		pthread_mutex_destroy( &self->video_mutex );
+		pthread_mutex_destroy( &self->packets_mutex );
+		pthread_mutex_destroy( &self->open_mutex );
+	}
 
 	// Cleanup the packet queues
 	AVPacket *pkt;

@@ -672,6 +672,8 @@ static void *consumer_read_ahead_thread( void *arg )
 			afmt = mlt_audio_float;
 		else if ( !strcmp( format, "f32le" ) )
 			afmt = mlt_audio_f32le;
+		else if ( !strcmp( format, "u8" ) )
+			afmt = mlt_audio_u8;
 	}
 	int counter = 0;
 	double fps = mlt_properties_get_double( properties, "fps" );
@@ -1422,10 +1424,6 @@ void mlt_consumer_stopped( mlt_consumer self )
 
 int mlt_consumer_stop( mlt_consumer self )
 {
-	// Return error if supplied invalid or stopped consumer.
-	if ( !self || mlt_consumer_is_stopped( self ) )
-		return -1;
-
 	// Get the properies
 	mlt_properties properties = MLT_CONSUMER_PROPERTIES( self );
 
@@ -1505,7 +1503,7 @@ void mlt_consumer_close( mlt_consumer self )
 		if ( consumer_close )
 		{
 			// Just in case...
-			mlt_consumer_stop( self );
+			//mlt_consumer_stop( self );
 
 			self->close = NULL;
 			consumer_close( self );
