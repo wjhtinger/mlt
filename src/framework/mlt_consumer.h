@@ -52,7 +52,7 @@
  * white silence. A test card is what appears when nothing is produced.
  * \event \em consumer-frame-show Subclass implementations fire this immediately after showing a frame
  * or when a frame should be shown (if audio-only consumer).
- * \event \em consumer-frame-rendered The base class fires this immediately after rendering a frame.
+ * \event \em consumer-frame-render The base class fires this immediately before rendering a frame.
  * \event \em consumer-thread-started The base class fires when beginning execution of a rendering thread.
  * \event \em consumer-stopped This is fired when the subclass implementation calls mlt_consumer_stopped().
  * \properties \em fps video frames per second as floating point (read only)
