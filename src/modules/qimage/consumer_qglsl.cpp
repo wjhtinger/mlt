@@ -45,7 +45,7 @@ public:
 			mlt_filter_close(filter); // glslManager holds the reference
 			set("mlt_image_format", "rgb24");
 			set("terminate_on_pause", 1);
-			set("real_time", 0);
+			set("real_time", -1);
 			glslManager->fire_event("init glsl");
 		} else {
 			mlt_consumer_close(get_consumer());
@@ -58,7 +58,7 @@ public:
 		delete glslManager;
 	}
 
-	void initContext()
+	void startGlsl()
 	{
 #ifdef linux
 		if ( getenv("DISPLAY") == 0 ) {
@@ -77,11 +77,6 @@ public:
 		renderContext->resize(0, 0);
 		renderContext->show();
 		app->processEvents();
-	}
-
-	void startGlsl()
-	{
-		renderContext->makeCurrent();
 		glslManager->fire_event("start glsl");
 	}
 
@@ -92,7 +87,6 @@ protected:
 		bool terminated = false;
 		mlt_frame frame = NULL;
 
-		initContext();
 		while (!terminated && isRunning()) {
 			if ((frame = mlt_consumer_rt_frame(get_consumer()))) {
 				terminated = terminate_on_pause &&
