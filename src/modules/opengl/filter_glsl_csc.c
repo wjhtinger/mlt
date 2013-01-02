@@ -494,6 +494,10 @@ static uint8_t* glsl_to_rgb( glsl_env g, glsl_texture source_tex, int *size, int
 
 static int convert_image( mlt_frame frame, uint8_t **image, mlt_image_format *format, mlt_image_format output_format )
 {
+	// Nothing to do!
+	if ( *format == output_format )
+		return 0;
+
 	mlt_properties properties = MLT_FRAME_PROPERTIES( frame );
 	int width = mlt_properties_get_int( properties, "width" );
 	int height = mlt_properties_get_int( properties, "height" );
@@ -501,8 +505,18 @@ static int convert_image( mlt_frame frame, uint8_t **image, mlt_image_format *fo
 	
 	fprintf(stderr,"filter_glsl_csc convert_image -----------------------in:%s out:%s\n", mlt_image_format_name( *format ), mlt_image_format_name( output_format ) );
 
-	if ( *format == output_format )
-		return 1;
+	// Do non-GL image conversions on a CPU-based image converter.
+	if ( *format != mlt_image_glsl && output_format != mlt_image_glsl && output_format != mlt_image_glsl_texture ) {
+		mlt_filter cpu_csc = mlt_properties_get_data( properties, "cpu_csc", NULL );
+		if ( cpu_csc ) {
+			void *save_fp = frame->convert_image;
+			frame->convert_image = NULL;
+			mlt_filter_process( cpu_csc, frame );
+			frame->convert_image( frame, image, format, output_format );
+			frame->convert_image = save_fp;
+		}
+		return 0;
+	}
 
 	glsl_env g = mlt_glsl_get( mlt_service_profile( mlt_frame_get_original_producer( frame ) ) );
 	if ( !g )
@@ -510,7 +524,7 @@ static int convert_image( mlt_frame frame, uint8_t **image, mlt_image_format *fo
 
 	glsl_texture texture = 0;
 	int release = 1;
-
+	
 	if ( *format != mlt_image_glsl ) {
 		if ( *format == mlt_image_rgb24a || *format == mlt_image_opengl ) { 
 			texture = rgb_to_glsl( g, *image, width, height, 1 );
@@ -551,8 +565,7 @@ static int convert_image( mlt_frame frame, uint8_t **image, mlt_image_format *fo
 			dest = glsl_to_rgb( g, texture, &size, width, height, 1 );
 		}
 		else if ( output_format == mlt_image_glsl_texture ) {
-			if ( !mlt_properties_get_int( properties, "rendered" ) )
-				glFinish();
+			glFinish();
 			dest = (uint8_t*) &texture->texture;
 			destructor = NULL;
 			size = sizeof(dest);
@@ -605,8 +618,33 @@ static mlt_frame filter_process( mlt_filter filter, mlt_frame frame )
 
 	frame->convert_image = convert_image;
 
+	mlt_filter cpu_csc = mlt_properties_get_data( MLT_FILTER_PROPERTIES( filter ), "cpu_csc", NULL );
+	mlt_properties_inc_ref( MLT_FILTER_PROPERTIES(cpu_csc) );
+	mlt_properties_set_data( properties, "cpu_csc", cpu_csc, 0,
+		(mlt_destructor) mlt_filter_close, NULL );
+
 	return frame;
 }
+
+static mlt_filter create_filter( mlt_profile profile, char *effect )
+{
+	mlt_filter filter = NULL;
+	char *id = strdup( effect );
+	char *arg = strchr( id, ':' );
+	if ( arg != NULL )
+		*arg ++ = '\0';
+
+	// The swscale and avcolor_space filters require resolution as arg to test compatibility
+	if ( !strcmp( effect, "avcolor_space" ) )
+		arg = (char*) profile->width;
+
+	filter = mlt_factory_filter( profile, id, arg );
+	if ( filter )
+		mlt_properties_set_int( MLT_FILTER_PROPERTIES( filter ), "_loader", 1 );
+	free( id );
+	return filter;
+}
+
 
 /** Constructor for the filter.
 */
@@ -618,7 +656,15 @@ mlt_filter filter_glsl_csc_init( mlt_profile profile, mlt_service_type type, con
 		return NULL;
 	
 	mlt_filter filter = mlt_filter_new( );
-	if ( filter != NULL )
+	if ( filter )
+	{
+		mlt_filter cpu_csc = create_filter( profile, "avcolor_space" );
+		if ( !cpu_csc )
+			cpu_csc = create_filter( profile, "imageconvert" );
+		if ( cpu_csc )
+			mlt_properties_set_data( MLT_FILTER_PROPERTIES( filter ), "cpu_csc", cpu_csc, 0,
+				(mlt_destructor) mlt_filter_close, NULL );
 		filter->process = filter_process;
+	}
 	return filter;
 }
