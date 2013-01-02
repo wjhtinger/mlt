@@ -21,17 +21,6 @@ CXXFLAGS += $(CFLAGS) $(QTCXXFLAGS) $(EXIFCXXFLAGS) $(KDECXXFLAGS) -Wno-deprecat
 
 LDFLAGS += $(QTLIBS) $(EXIFLIBS) $(KDELIBS)
 
-ifeq ($(targetos), MinGW)
-	LDFLAGS += -lopengl32
-else
-ifeq ($(targetos), Darwin)
-	CFLAGS += -FOpenGL
-	LDFLAGS += -framework OpenGL
-else
-	LDFLAGS += -lGL
-endif
-endif
-
 ifdef USE_KDE3
 LDFLAGS += -lkio
 endif

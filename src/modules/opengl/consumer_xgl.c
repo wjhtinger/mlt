@@ -253,7 +253,6 @@ void* video_thread( void *arg )
 	mlt_properties consumer_props = MLT_CONSUMER_PROPERTIES( consumer );
 	struct timeval start, end;
 	double duration = 0;
-	int real_time = mlt_properties_get_int( consumer_props, "real_time" );
 	
 	gettimeofday( &start, NULL );
 	
@@ -534,15 +533,10 @@ void start_xgl( consumer_xgl consumer )
 
 static void on_consumer_thread_started( mlt_properties owner, HiddenContext* context )
 {
-	fprintf(stderr, "%s: %d\n", __FUNCTION__, syscall(SYS_gettid));
+	fprintf(stderr, "%s: %ld\n", __FUNCTION__, syscall(SYS_gettid));
 	// Initialize this thread's OpenGL state
 	glXMakeCurrent( context->dpy, context->win, context->ctx );
 	mlt_events_fire( MLT_FILTER_PROPERTIES(glsl_manager), "start glsl", NULL );
-}
-
-static void on_consumer_frame_rendered( mlt_properties owner, mlt_consumer consumer, mlt_frame frame )
-{
-	glFinish();
 }
 
 /** Forward references to static functions.
@@ -608,7 +602,6 @@ mlt_consumer consumer_xgl_init( mlt_profile profile, mlt_service_type type, cons
 		glsl_manager = mlt_factory_filter( profile, "glsl.manager", NULL );
 		if ( glsl_manager ) {
 			mlt_events_listen( this->properties, &hiddenctx, "consumer-thread-started", (mlt_listener) on_consumer_thread_started );
-			mlt_events_listen( this->properties, service, "consumer-frame-rendered", (mlt_listener) on_consumer_frame_rendered );
 			mlt_events_fire( MLT_FILTER_PROPERTIES(glsl_manager), "init glsl", NULL );
 		} else {
 			mlt_consumer_close( parent );

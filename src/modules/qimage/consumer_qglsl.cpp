@@ -25,9 +25,6 @@
 #include <QtCore/QThread>
 #include <QtOpenGL/QGLWidget>
 #include <stdio.h>
-#if defined(WIN32)
-#include <GL/gl.h>
-#endif
 
 class QGlslConsumer : public QThread, public Mlt::Consumer
 {
@@ -46,7 +43,7 @@ public:
 			consumer->child = this;
 			glslManager = new Mlt::Filter(filter);
 			mlt_filter_close(filter); // glslManager holds the reference
-			set("mlt_image_format", "glsl");
+			set("mlt_image_format", "rgb24");
 			set("terminate_on_pause", 1);
 			set("real_time", 0);
 			glslManager->fire_event("init glsl");
@@ -149,12 +146,6 @@ static void onThreadStarted(mlt_properties owner, QGlslConsumer* qglsl)
 	qglsl->startGlsl();
 }
 
-static void onFrameRendered(mlt_properties owner, QGlslConsumer* qglsl)
-{
-	mlt_log_verbose(qglsl->get_service(), "%s\n", __FUNCTION__);
-	glFinish();
-}
-
 extern "C" {
 
 mlt_consumer consumer_qglsl_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg )
@@ -168,7 +159,6 @@ mlt_consumer consumer_qglsl_init( mlt_profile profile, mlt_service_type type, co
 		c->stop = stop;
 		c->close = close;
 		consumer->listen("consumer-thread-started", consumer, (mlt_listener) onThreadStarted);
-		consumer->listen("consumer-frame-rendered", consumer, (mlt_listener) onFrameRendered);
 		return c;
 	} else {
 		delete consumer;
