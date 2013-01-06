@@ -66,7 +66,9 @@ void hsv2rgb_normalized(float h, float s, float v, float *r, float *g, float *b)
 std::string read_file(const std::string &filename)
 {
 	static char buf[131072];
-	FILE *fp = fopen(filename.c_str(), "r");
+	std::string fullname = mlt_environment( "MLT_DATA" );
+	fullname += "/opengl/movit/" + filename;
+	FILE *fp = fopen(fullname.c_str(), "r");
 	if (fp == NULL) {
 		perror(filename.c_str());
 		exit(1);

@@ -162,6 +162,9 @@ void check_extensions()
 
 }  // namespace
 
+extern "C"
+{
+
 void init_movit()
 {
 	if (movit_initialized) {
@@ -177,3 +180,5 @@ void init_movit()
 
 	movit_initialized = true;
 }
+
+} // extern "C"

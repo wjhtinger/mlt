@@ -1055,6 +1055,7 @@ void EffectChain::finalize()
 
 void EffectChain::render_to_fbo(GLuint dest_fbo, unsigned width, unsigned height)
 {
+	if (!finalized) finalize();
 	assert(finalized);
 
 	// Save original viewport.

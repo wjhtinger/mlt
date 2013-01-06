@@ -8,6 +8,7 @@
 
 #include <string>
 #include <Eigen/Core>
+#include <framework/mlt.h>
 
 #include "opengl.h"
 
