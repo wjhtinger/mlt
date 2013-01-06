@@ -28,6 +28,7 @@
 #include <string.h>
 #include <math.h>
 
+extern void init_movit();
 
 
 ////// unsorted list //////////////////////////////////
@@ -569,13 +570,12 @@ static glsl_shader glsl_get_shader( glsl_env g, const char *name, const char **s
 }
 
 
-
 void mlt_glsl_start( glsl_env g )
 {
 	if ( g && !g->is_started )
 	{
 		g->is_started = 1;
-
+		init_movit();
 		glClearColor( 0.0f, 0.0f, 0.0f, 0.0f );
 		glClearDepth( 1.0f );
 		glDepthFunc( GL_LEQUAL );
@@ -585,11 +585,6 @@ void mlt_glsl_start( glsl_env g )
 		glShadeModel( GL_SMOOTH );
 		glEnable( GL_TEXTURE_RECTANGLE_ARB );
 		glHint( GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST );
-
-		// check for optionnal features
-		const char *extensions = glGetString( GL_EXTENSIONS );
-		if ( extensions && strstr( extensions, "ARB_texture_float" ) )
-			g->texture_float = 1;
 	}
 }
 

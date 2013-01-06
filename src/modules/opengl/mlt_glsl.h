@@ -21,19 +21,7 @@
 #ifndef MLT_GLSL
 #define MLT_GLSL
 
-#if defined(__DARWIN__)
-#   include <OpenGL/gl.h>
-#   include <OpenGL/glext.h>
-//  XXX: GL_RGBA32F is a part of <OpenGL/gl3.h>, but we are not supposed to include it.
-#   define GL_RGBA32F (0x8814)
-#elif defined(WIN32)
-#   include "GLee/GLee.h"
-#else
-#   define GL_GLEXT_PROTOTYPES
-#   include <GL/gl.h>
-#   include <GL/glext.h>
-#endif
-
+#include "movit/opengl.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -43,14 +31,12 @@
 #else
 #include <sys/syscall.h>
 #endif
-
 #include <framework/mlt_profile.h>
 
 
 #define N_SPLINES 2
 #define CATMULLROM_SPLINE 	0
 #define COS_SPLINE			1
-
 
 
 #define MAXLISTCOUNT 1024
@@ -112,8 +98,7 @@ struct glsl_shader_s
 };
 typedef struct glsl_shader_s *glsl_shader;
 
-
-
+// TODO: rename this mlt_glsl
 struct glsl_env_s
 {
 	glsl_list texture_list;
@@ -131,8 +116,9 @@ struct glsl_env_s
 
 	glsl_texture bicubic_lut;
 	
-	int texture_float;
 	int is_started;
+	void *movitChain;
+	void *movitInput;
 };
 
 #ifdef __cplusplus

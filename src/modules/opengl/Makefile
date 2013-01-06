@@ -1,4 +1,4 @@
-CFLAGS += -I../..
+CFLAGS += -I../.. -I../../eigen3
 
 LDFLAGS += -L../../framework -lmlt -lm
 
@@ -21,7 +21,37 @@ OBJS = factory.o \
 	filter_glsl_gamma.o \
 	transition_glsl_luma.o
 
-CPPOBJS = 	filter_glsl_manager.o
+CPPOBJS = filter_glsl_manager.o
+
+# Movit Core
+CPPOBJS += movit/util.o movit/effect.o movit/effect_chain.o movit/init.o
+
+# Movit Inputs
+CPPOBJS += movit/flat_input.o
+CPPOBJS += movit/ycbcr_input.o
+
+# Movit Effects
+CPPOBJS += movit/lift_gamma_gain_effect.o
+CPPOBJS += movit/white_balance_effect.o
+CPPOBJS += movit/gamma_expansion_effect.o
+CPPOBJS += movit/gamma_compression_effect.o
+CPPOBJS += movit/colorspace_conversion_effect.o
+CPPOBJS += movit/saturation_effect.o
+CPPOBJS += movit/vignette_effect.o
+CPPOBJS += movit/mirror_effect.o
+CPPOBJS += movit/blur_effect.o
+CPPOBJS += movit/diffusion_effect.o
+CPPOBJS += movit/glow_effect.o
+CPPOBJS += movit/unsharp_mask_effect.o
+CPPOBJS += movit/mix_effect.o
+CPPOBJS += movit/resize_effect.o
+CPPOBJS += movit/resample_effect.o
+CPPOBJS += movit/dither_effect.o
+CPPOBJS += movit/deconvolution_sharpen_effect.o
+CPPOBJS += movit/sandbox_effect.o
+
+# Movit MLT services
+CPPOBJS += filter_movit_blur.o
 
 ifeq ($(targetos), MinGW)
 	OBJS += GLee/GLee.o

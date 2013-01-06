@@ -116,7 +116,7 @@ static int filter_get_image( mlt_frame frame, uint8_t **image, mlt_image_format 
 		{
 			glsl_texture dest = NULL;
 			
-			if ( !strcmp( interps, "nearest" ) || !strcmp( interps, "bilinear" ) || !g->texture_float )
+			if ( !strcmp( interps, "nearest" ) || !strcmp( interps, "bilinear" ) )
 			{
 				dest = glsl_rescale_bilinear( g, source_tex, iwidth, iheight, owidth, oheight );
 			}
@@ -129,8 +129,8 @@ static int filter_get_image( mlt_frame frame, uint8_t **image, mlt_image_format 
 			}
 
 			if ( dest ) {
-				fprintf(stderr,"filter_glsl_rescale -----------------------set_image, %u, %u [frame:%d] [%d] w=%d h=%d g->texture_float=%d\n",
-					(unsigned int)dest, dest->texture, mlt_properties_get_int(MLT_FRAME_PROPERTIES( frame ), "_position"), syscall(SYS_gettid), owidth, oheight, g->texture_float);
+				fprintf(stderr,"filter_glsl_rescale -----------------------set_image, %u, %u [frame:%d] [%d] w=%d h=%d\n",
+					(unsigned int)dest, dest->texture, mlt_properties_get_int(MLT_FRAME_PROPERTIES( frame ), "_position"), syscall(SYS_gettid), owidth, oheight);
 				mlt_frame_set_image( frame, (uint8_t*)dest, sizeof(struct glsl_texture_s), g->texture_destructor );
 				*image = (uint8_t*)dest;
 			}
