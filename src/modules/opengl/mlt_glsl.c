@@ -28,6 +28,10 @@
 #include <string.h>
 #include <math.h>
 
+// XXX: GL_RGBA32F is a part of <OpenGL/gl3.h> on OS X, but we are not supposed to include it - only gl.h.
+#ifndef GL_RGBA32F
+#define GL_RGBA32F (0x8814)
+#endif
 
 ////// unsorted list //////////////////////////////////
 static int list_add( glsl_list list, void *p )
