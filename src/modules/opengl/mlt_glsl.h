@@ -119,6 +119,7 @@ struct glsl_env_s
 	int is_started;
 	void *movitChain;
 	void *movitInput;
+	int movitFinalized;
 };
 
 #ifdef __cplusplus
@@ -134,6 +135,7 @@ extern glsl_texture glsl_rescale_bilinear( glsl_env g, glsl_texture source_tex, 
 extern glsl_texture glsl_rescale_bicubic( glsl_env g, glsl_texture source_tex, int iwidth, int iheight, int owidth, int oheight, int spline );
 extern void glsl_set_ortho_view( int width, int height );
 extern void glsl_draw_quad( float x1, float y1, float x2, float y2 );
+extern void mlt_glsl_render_fbo( glsl_env glsl, GLuint fbo, int width, int height );
 
 #ifdef __cplusplus
 }

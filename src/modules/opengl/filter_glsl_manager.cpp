@@ -20,6 +20,7 @@
 #include <mlt++/MltFilter.h>
 #include "mlt_glsl.h"
 #include "movit/init.h"
+#include "movit/effect_chain.h"
 
 class GlslManager : public Mlt::Filter
 {
@@ -70,6 +71,16 @@ mlt_filter filter_glsl_manager_init( mlt_profile profile, mlt_service_type type,
 {
 	GlslManager* g = new GlslManager();
 	return g->get_filter();
+}
+
+void mlt_glsl_render_fbo( glsl_env glsl, GLuint fbo, int width, int height )
+{
+	EffectChain* chain = (EffectChain*) glsl->movitChain;
+	if ( !glsl->movitFinalized ) {
+		glsl->movitFinalized = 1;
+		chain->finalize();
+	}
+	chain->render_to_fbo( fbo, width, height );
 }
 
 }

@@ -70,7 +70,7 @@ static int get_image( mlt_frame frame, uint8_t **image, mlt_image_format *format
 				glBindFramebuffer( GL_FRAMEBUFFER, 0 );
 				check_error();
 
-				chain->render_to_fbo( fbo->fbo, *width, *height );
+				mlt_glsl_render_fbo( glsl, fbo->fbo, *width, *height );
 
 				// Read FBO into PBO
 				glBindBuffer( GL_PIXEL_PACK_BUFFER_ARB, pbo->pbo );
