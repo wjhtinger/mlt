@@ -28,8 +28,6 @@
 #include <string.h>
 #include <math.h>
 
-extern void init_movit();
-
 
 ////// unsorted list //////////////////////////////////
 static int list_add( glsl_list list, void *p )
@@ -575,7 +573,6 @@ void mlt_glsl_start( glsl_env g )
 	if ( g && !g->is_started )
 	{
 		g->is_started = 1;
-		init_movit();
 		glClearColor( 0.0f, 0.0f, 0.0f, 0.0f );
 		glClearDepth( 1.0f );
 		glDepthFunc( GL_LEQUAL );

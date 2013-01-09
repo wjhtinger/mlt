@@ -19,6 +19,7 @@
 
 #include <mlt++/MltFilter.h>
 #include "mlt_glsl.h"
+#include "movit/init.h"
 
 class GlslManager : public Mlt::Filter
 {
@@ -45,7 +46,8 @@ private:
 	static void onTest( mlt_properties owner, GlslManager* filter )
 	{
 		mlt_log_verbose( filter->get_service(), "%s: %d\n", __FUNCTION__, syscall(SYS_gettid) );
-		filter->set( "glsl_supported", mlt_glsl_supported() );
+		init_movit();
+		filter->set( "glsl_supported", movit_initialized && mlt_glsl_supported() );
 	}
 
 	static void onInit( mlt_properties owner, GlslManager* filter )
@@ -57,6 +59,7 @@ private:
 	static void onStart( mlt_properties owner, GlslManager* filter )
 	{
 		mlt_log_verbose( filter->get_service(), "%s: %d\n", __FUNCTION__, syscall(SYS_gettid) );
+		init_movit();
 		mlt_glsl_start( mlt_glsl_get( filter->get_profile() ) );
 	}
 };

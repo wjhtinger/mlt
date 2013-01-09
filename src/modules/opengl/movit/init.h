@@ -4,15 +4,7 @@
 // Initialize the library; in particular, will query the GPU for information
 // that is needed by various components. For instance, it verifies that
 // we have all the OpenGL extensions we need.
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 void init_movit();
-
-#ifdef __cplusplus
-} // extern "C"
-#endif
 
 // GPU features. These are not intended for end-user use.
 
