@@ -54,7 +54,6 @@ CPPOBJS += movit/sandbox_effect.o
 CPPOBJS += filter_movit_blur.o
 
 ifeq ($(targetos), MinGW)
-	OBJS += GLee/GLee.o
 	LDFLAGS += -lopengl32
 else
 ifeq ($(targetos), Darwin)
@@ -68,7 +67,7 @@ endif
 
 CXXFLAGS += $(CFLAGS) -Wno-deprecated
 
-LDFLAGS += -L../../mlt++ -lmlt++
+LDFLAGS += -L../../mlt++ -lmlt++ -lGLEW
 
 SRCS := $(OBJS:.o=.c) $(CPPOBJS:.o=.cpp)
 
@@ -88,8 +87,9 @@ clean:
 
 install: all
 	install -m 755 $(TARGET) "$(DESTDIR)$(libdir)/mlt"
-	install -d "$(DESTDIR)$(datadir)/mlt/opengl"
+	install -d "$(DESTDIR)$(datadir)/mlt/opengl/movit"
 	install -m 644 *.yml "$(DESTDIR)$(datadir)/mlt/opengl"
+	install -m 644 movit/*.{frag,vert} "$(DESTDIR)$(datadir)/mlt/opengl/movit"
 
 ifneq ($(wildcard .depend),)
 include .depend

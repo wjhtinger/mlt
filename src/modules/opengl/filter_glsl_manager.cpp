@@ -17,6 +17,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include <string>
 #include <mlt++/MltFilter.h>
 #include "mlt_glsl.h"
 #include "movit/init.h"
@@ -48,7 +49,8 @@ private:
 	static void onTest( mlt_properties owner, GlslManager* filter )
 	{
 		mlt_log_verbose( filter->get_service(), "%s: %d\n", __FUNCTION__, syscall(SYS_gettid) );
-		init_movit();
+		init_movit( std::string(mlt_environment( "MLT_DATA" )).append("/opengl/movit"),
+			mlt_log_get_level() == MLT_LOG_DEBUG? MOVIT_DEBUG_ON : MOVIT_DEBUG_OFF );
 		filter->set( "glsl_supported", movit_initialized && mlt_glsl_supported() );
 	}
 
@@ -61,7 +63,8 @@ private:
 	static void onStart( mlt_properties owner, GlslManager* filter )
 	{
 		mlt_log_verbose( filter->get_service(), "%s: %d\n", __FUNCTION__, syscall(SYS_gettid) );
-		init_movit();
+		init_movit( std::string(mlt_environment( "MLT_DATA" )).append("/opengl/movit"),
+			mlt_log_get_level() == MLT_LOG_DEBUG? MOVIT_DEBUG_ON : MOVIT_DEBUG_OFF );
 		mlt_glsl_start( mlt_glsl_get( filter->get_profile() ) );
 	}
 };
