@@ -24,7 +24,6 @@
 #include "mlt_glsl.h"
 #include "movit/init.h"
 #include "movit/effect_chain.h"
-#include "movit/flat_input.h"
 #include "movit/blur_effect.h"
 
 // Flip upside-down to compensate for different origin.
@@ -49,8 +48,7 @@ static int get_image( mlt_frame frame, uint8_t **image, mlt_image_format *format
 		glsl_env glsl = mlt_glsl_get( mlt_service_profile( MLT_PRODUCER_SERVICE( mlt_frame_get_original_producer( frame ) ) ) );
 		if ( glsl )
 		{
-			FlatInput* input = (FlatInput*) glsl->movitInput;
-			input->set_pixel_data( *image );
+			mlt_glsl_set_image( glsl, *image );
 			int rgba_size = mlt_image_format_size( *format, *width, *height, NULL );
 			glsl_texture tex = glsl->get_texture( glsl, *width, *height, GL_RGBA );
 			glsl_fbo fbo = glsl->get_fbo( glsl, *width, *height );
@@ -113,33 +111,9 @@ static mlt_frame process( mlt_filter filter, mlt_frame frame )
 	return frame;
 }
 
-static void deleteInput( void *o )
-{
-	delete (Input*) o;
-}
-
 static void deleteEffect( void *o )
 {
 	delete (Effect*) o;
-}
-
-// TODO: move this into movit/util.cpp and invoke only from colorspace mlt_filter
-static bool setupMovit( mlt_properties properties, glsl_env glsl, mlt_profile profile )
-{
-	if ( !glsl->movitChain )
-	{
-		ImageFormat inout_format;
-		inout_format.color_space = COLORSPACE_sRGB;
-		inout_format.gamma_curve = GAMMA_sRGB;
-		FlatInput* input = new FlatInput( inout_format, FORMAT_RGBA, GL_UNSIGNED_BYTE, profile->width, profile->height );
-		EffectChain *chain = new EffectChain( mlt_profile_dar( profile ), 1.0f );
-		glsl->movitChain = chain;
-		glsl->movitInput = input;
-		chain->add_input( input );
-		chain->add_output( inout_format );
-		mlt_properties_set_data( properties, "input", input, 0, deleteInput, NULL );
-	}
-	return true;
 }
 
 extern "C" {
@@ -152,7 +126,7 @@ mlt_filter filter_movit_blur_init( mlt_profile profile, mlt_service_type type, c
 	if ( glsl && ( filter = mlt_filter_new() ) )
 	{
 		mlt_properties properties = MLT_FILTER_PROPERTIES( filter );
-		if ( setupMovit( properties, glsl, profile ) )
+		if ( !mlt_glsl_init_movit( properties, glsl, profile ) )
 		{
 			EffectChain* chain = (EffectChain*) glsl->movitChain;
 			Effect* effect = chain->add_effect( new BlurEffect() );
