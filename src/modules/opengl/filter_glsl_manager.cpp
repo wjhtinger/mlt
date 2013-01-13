@@ -21,6 +21,7 @@
 #include "mlt_glsl.h"
 #include "movit/init.h"
 #include "movit/effect_chain.h"
+#include "mlt_movit_input.h"
 
 class GlslManager : public Mlt::Filter
 {
@@ -65,12 +66,40 @@ private:
 	}
 };
 
+static void deleteInput( void *o )
+{
+	delete (Input*) o;
+}
+
 extern "C" {
 
 mlt_filter filter_glsl_manager_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg )
 {
 	GlslManager* g = new GlslManager();
 	return g->get_filter();
+}
+
+int mlt_glsl_init_movit( mlt_properties properties, glsl_env glsl, mlt_profile profile )
+{
+	int error = 0;
+	if ( !glsl->movitChain )
+	{
+		MltInput* input = new MltInput( profile->width, profile->height );
+		EffectChain *chain = new EffectChain( mlt_profile_dar( profile ), 1.0f );
+		glsl->movitChain = chain;
+		glsl->movitInput = input;
+		chain->add_input( input );
+		mlt_properties_set_data( properties, "input", input, 0, deleteInput, NULL );
+	}
+	return error;
+}
+
+void mlt_glsl_set_image( glsl_env glsl, const uint8_t* image )
+{
+	MltInput* input = (MltInput*) glsl->movitInput;
+	EffectChain* chain = (EffectChain*) glsl->movitChain;
+	input->useFlatInput( chain );
+	input->set_pixel_data( image );
 }
 
 void mlt_glsl_render_fbo( glsl_env glsl, GLuint fbo, int width, int height )
