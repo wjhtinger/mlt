@@ -14,6 +14,8 @@
 #include <vector>
 #include <map>
 
+#include <GL/glew.h>
+
 #include <SDL/SDL.h>
 #include <SDL/SDL_opengl.h>
 #include <SDL/SDL_image.h>
@@ -22,7 +24,6 @@
 #include "effect.h"
 #include "effect_chain.h"
 #include "util.h"
-#include "opengl.h"
 #include "widgets.h"
 
 #include "flat_input.h"
@@ -154,12 +155,12 @@ int main(int argc, char **argv)
 	SDL_SetVideoMode(WIDTH, HEIGHT, 0, SDL_OPENGL);
 	SDL_WM_SetCaption("OpenGL window", NULL);
 
-	init_movit();
+	init_movit(".", MOVIT_DEBUG_ON);
 	printf("GPU texture subpixel precision: about %.1f bits\n",
 		log2(1.0f / movit_texel_subpixel_precision));
 	
 	unsigned img_w, img_h;
-	unsigned char *src_img = load_image("blg_wheels_woman_1.jpg", &img_w, &img_h);
+	unsigned char *src_img = load_image(argc > 1 ? argv[1] : "blg_wheels_woman_1.jpg", &img_w, &img_h);
 
 	EffectChain chain(WIDTH, HEIGHT);
 	glViewport(0, 0, WIDTH, HEIGHT);

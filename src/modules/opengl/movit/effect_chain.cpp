@@ -4,6 +4,7 @@
 #include <math.h>
 #include <string.h>
 #include <assert.h>
+#include <GL/glew.h>
 
 #include <algorithm>
 #include <set>
@@ -17,7 +18,7 @@
 #include "colorspace_conversion_effect.h"
 #include "dither_effect.h"
 #include "input.h"
-#include "opengl.h"
+#include "init.h"
 
 EffectChain::EffectChain(float aspect_nom, float aspect_denom)
 	: aspect_nom(aspect_nom),
@@ -50,10 +51,7 @@ EffectChain::~EffectChain()
 Input *EffectChain::add_input(Input *input)
 {
 	inputs.push_back(input);
-
-	Node *node = add_node(input);
-	node->output_color_space = input->get_color_space();
-	node->output_gamma_curve = input->get_gamma_curve();
+	add_node(input);
 	return input;
 }
 
@@ -268,17 +266,19 @@ Phase *EffectChain::compile_glsl_program(
 	frag_shader += std::string("#define INPUT ") + effects.back()->effect_id + "\n";
 	frag_shader.append(read_file("footer.frag"));
 
-	// Output shader to a temporary file, for easier debugging.
-	static int compiled_shader_num = 0;
-	char filename[256];
-	sprintf(filename, "chain-%03d.frag", compiled_shader_num++);
-	FILE *fp = fopen(filename, "w");
-	if (fp == NULL) {
-		perror(filename);
-		exit(1);
+	if (movit_debug_level == MOVIT_DEBUG_ON) {
+		// Output shader to a temporary file, for easier debugging.
+		static int compiled_shader_num = 0;
+		char filename[256];
+		sprintf(filename, "chain-%03d.frag", compiled_shader_num++);
+		FILE *fp = fopen(filename, "w");
+		if (fp == NULL) {
+			perror(filename);
+			exit(1);
+		}
+		fprintf(fp, "%s\n", frag_shader.c_str());
+		fclose(fp);
 	}
-	fprintf(fp, "%s\n", frag_shader.c_str());
-	fclose(fp);
 	
 	GLuint glsl_program_num = glCreateProgram();
 	GLuint vs_obj = compile_shader(read_file("vs.vert"), GL_VERTEX_SHADER);
@@ -427,6 +427,10 @@ void EffectChain::construct_glsl_programs(Node *output)
 
 void EffectChain::output_dot(const char *filename)
 {
+	if (movit_debug_level != MOVIT_DEBUG_ON) {
+		return;
+	}
+
 	FILE *fp = fopen(filename, "w");
 	if (fp == NULL) {
 		perror(filename);
@@ -639,6 +643,21 @@ void EffectChain::topological_sort_visit_node(Node *node, std::set<Node *> *visi
 		topological_sort_visit_node(node->outgoing_links[i], visited_nodes, sorted_list);
 	}
 	sorted_list->push_back(node);
+}
+
+void EffectChain::find_color_spaces_for_inputs()
+{
+	for (unsigned i = 0; i < nodes.size(); ++i) {
+		Node *node = nodes[i];
+		if (node->disabled) {
+			continue;
+		}
+		if (node->incoming_links.size() == 0) {
+			Input *input = static_cast<Input *>(node->effect);
+			node->output_color_space = input->get_color_space();
+			node->output_gamma_curve = input->get_gamma_curve();
+		}
+	}
 }
 
 // Propagate gamma and color space information as far as we can in the graph.
@@ -985,8 +1004,11 @@ void EffectChain::finalize()
 	}
 	output_dot("step1-rewritten.dot");
 
+	find_color_spaces_for_inputs();
+	output_dot("step2-input-colorspace.dot");
+
 	propagate_gamma_and_color_space();
-	output_dot("step2-propagated.dot");
+	output_dot("step3-propagated.dot");
 
 	fix_internal_color_spaces();
 	fix_output_color_space();

@@ -1,13 +1,18 @@
-#include "init.h"
-#include "opengl.h"
-#include "util.h"
-
-#include <set>
+#include <GL/glew.h>
 #include <string>
 
+#include "init.h"
+#include "util.h"
+
 bool movit_initialized = false;
+MovitDebugLevel movit_debug_level = MOVIT_DEBUG_ON;
 float movit_texel_subpixel_precision;
 bool movit_srgb_textures_supported;
+
+// The rules for objects with nontrivial constructors in static scope
+// are somewhat convoluted, and easy to mess up. We simply have a
+// pointer instead (and never care to clean it up).
+std::string *movit_data_directory = NULL;
 
 namespace {
 
@@ -123,50 +128,43 @@ void measure_texel_subpixel_precision()
 	check_error();
 }
 
-void get_extensions(std::set<std::string> *extensions)
-{
-	char *str = strdup(reinterpret_cast<const char *>(glGetString(GL_EXTENSIONS)));
-	for (char *ptr = strtok(str, " "); ptr != NULL; ptr = strtok(NULL, " ")) {
-		extensions->insert(ptr);
-	}
-	free(str);
-}
-
 void check_extensions()
 {
-	std::set<std::string> extensions;
-	get_extensions(&extensions);
-
 	// We fundamentally need FBOs and floating-point textures.
-	assert(extensions.count("GL_ARB_framebuffer_object") != 0);
-	assert(extensions.count("GL_ARB_texture_float") != 0);
+	assert(glewIsSupported("GL_ARB_framebuffer_object") != 0);
+	assert(glewIsSupported("GL_ARB_texture_float") != 0);
 
 	// We assume that we can use non-power-of-two textures without restrictions.
-	assert(extensions.count("GL_ARB_texture_non_power_of_two") != 0);
+	assert(glewIsSupported("GL_ARB_texture_non_power_of_two") != 0);
 
 	// We also need GLSL fragment shaders.
-	assert(extensions.count("GL_ARB_fragment_shader") != 0);
-	assert(extensions.count("GL_ARB_shading_language_100") != 0);
+	assert(glewIsSupported("GL_ARB_fragment_shader") != 0);
+	assert(glewIsSupported("GL_ARB_shading_language_100") != 0);
 
 	// FlatInput and YCbCrInput uses PBOs. (They could in theory do without,
 	// but no modern card would really not provide it.)
-	assert(extensions.count("GL_ARB_pixel_buffer_object") != 0);
+	assert(glewIsSupported("GL_ARB_pixel_buffer_object") != 0);
 
 	// ResampleEffect uses RG textures to encode a two-component LUT.
-	assert(extensions.count("GL_ARB_texture_rg") != 0);
+	assert(glewIsSupported("GL_ARB_texture_rg") != 0);
 
 	// sRGB texture decode would be nice, but are not mandatory
 	// (GammaExpansionEffect can do the same thing if needed).
-	movit_srgb_textures_supported = extensions.count("GL_EXT_texture_sRGB");
+	movit_srgb_textures_supported = glewIsSupported("GL_EXT_texture_sRGB");
 }
 
 }  // namespace
 
-void init_movit()
+void init_movit(const std::string& data_directory, MovitDebugLevel debug_level)
 {
 	if (movit_initialized) {
 		return;
 	}
+
+	movit_data_directory = new std::string(data_directory);
+	movit_debug_level = debug_level;
+
+	glewInit();
 
 	// geez	
 	glPixelStorei(GL_PACK_ALIGNMENT, 1);

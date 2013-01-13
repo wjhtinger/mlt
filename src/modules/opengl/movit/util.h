@@ -8,9 +8,8 @@
 
 #include <string>
 #include <Eigen/Core>
-#include <framework/mlt.h>
 
-#include "opengl.h"
+#include <GL/glew.h>
 
 #define BUFFER_OFFSET(i) ((char *)NULL + (i))
 

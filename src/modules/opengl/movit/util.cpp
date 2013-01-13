@@ -1,11 +1,13 @@
 #include <stdio.h>
+#include <math.h>
 #include <string.h>
 #include <assert.h>
+#include <GL/glew.h>
 
-#include <math.h>
 #include "util.h"
-#include "opengl.h"
 #include "init.h"
+
+extern std::string *movit_data_directory;
 
 void hsv2rgb(float h, float s, float v, float *r, float *g, float *b)
 {
@@ -65,12 +67,12 @@ void hsv2rgb_normalized(float h, float s, float v, float *r, float *g, float *b)
 
 std::string read_file(const std::string &filename)
 {
+	const std::string full_pathname = *movit_data_directory + "/" + filename;
+
 	static char buf[131072];
-	std::string fullname = mlt_environment( "MLT_DATA" );
-	fullname += "/opengl/movit/" + filename;
-	FILE *fp = fopen(fullname.c_str(), "r");
+	FILE *fp = fopen(full_pathname.c_str(), "r");
 	if (fp == NULL) {
-		perror(filename.c_str());
+		perror(full_pathname.c_str());
 		exit(1);
 	}
 
