@@ -69,9 +69,18 @@ private:
 	}
 };
 
-static void deleteInput( void *o )
+namespace Mlt
 {
-	delete (Input*) o;
+class VerticalFlip : public Effect {
+public:
+	VerticalFlip() {}
+	virtual std::string effect_type_id() const { return "Mlt::VerticalFlip"; }
+	std::string output_fragment_shader() {
+		return "vec4 FUNCNAME(vec2 tc) { tc.y = 1.0 - tc.y; return INPUT(tc); }\n";
+	}
+	virtual bool needs_linear_light() const { return false; }
+	virtual bool needs_srgb_primaries() const { return false; }
+};
 }
 
 extern "C" {
@@ -82,7 +91,7 @@ mlt_filter filter_glsl_manager_init( mlt_profile profile, mlt_service_type type,
 	return g->get_filter();
 }
 
-int mlt_glsl_init_movit( mlt_properties properties, glsl_env glsl, mlt_profile profile )
+int mlt_glsl_init_movit( glsl_env glsl, mlt_profile profile )
 {
 	int error = 0;
 	if ( !glsl->movitChain )
@@ -92,7 +101,6 @@ int mlt_glsl_init_movit( mlt_properties properties, glsl_env glsl, mlt_profile p
 		glsl->movitChain = chain;
 		glsl->movitInput = input;
 		chain->add_input( input );
-		mlt_properties_set_data( properties, "input", input, 0, deleteInput, NULL );
 	}
 	return error;
 }
@@ -101,18 +109,26 @@ void mlt_glsl_set_image( glsl_env glsl, const uint8_t* image )
 {
 	MltInput* input = (MltInput*) glsl->movitInput;
 	EffectChain* chain = (EffectChain*) glsl->movitChain;
-	input->useFlatInput( chain );
+	input->useFlatInput( chain, FORMAT_RGBA );
 	input->set_pixel_data( image );
 }
 
-void mlt_glsl_render_fbo( glsl_env glsl, GLuint fbo, int width, int height )
+void mlt_glsl_render_fbo( glsl_env glsl, void* chain, GLuint fbo, int width, int height )
 {
-	EffectChain* chain = (EffectChain*) glsl->movitChain;
+	EffectChain* effect_chain = (EffectChain*) chain;
 	if ( !glsl->movitFinalized ) {
 		glsl->movitFinalized = 1;
-		chain->finalize();
+		effect_chain->add_effect( new Mlt::VerticalFlip() );
+		effect_chain->finalize();
 	}
-	chain->render_to_fbo( fbo, width, height );
+	effect_chain->render_to_fbo( fbo, width, height );
+}
+
+void mlt_glsl_close( glsl_env glsl )
+{
+//	delete (EffectChain*) glsl->movitChain;
+	// TODO: free list members of glsl
+	free( glsl );
 }
 
 }

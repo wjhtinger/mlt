@@ -222,7 +222,7 @@ mlt_producer producer_loader_init( mlt_profile profile, mlt_service_type type, c
 	{
 		// Always let the image and audio be converted
 		int created = 0;
-		create_filter( profile, producer, "glsl.csc", &created );
+		create_filter( profile, producer, "movit.convert", &created );
 		// glsl.csc skips setting the frame->convert_image pointer if GLSL cannot be used.
 		// avcolor_space and imageconvert only set frame->convert_image if it has not been set.
 		create_filter( profile, producer, "avcolor_space", &created );

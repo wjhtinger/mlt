@@ -136,9 +136,11 @@ extern glsl_texture glsl_rescale_bicubic( glsl_env g, glsl_texture source_tex, i
 extern void glsl_set_ortho_view( int width, int height );
 extern void glsl_draw_quad( float x1, float y1, float x2, float y2 );
 
-extern int mlt_glsl_init_movit( mlt_properties properties, glsl_env glsl, mlt_profile profile );
+/* These are implemented in filter_glsl_manager.cpp. */
+extern int mlt_glsl_init_movit( glsl_env glsl, mlt_profile profile );
 extern void mlt_glsl_set_image( glsl_env glsl, const uint8_t* image );
-extern void mlt_glsl_render_fbo( glsl_env glsl, GLuint fbo, int width, int height );
+extern void mlt_glsl_render_fbo( glsl_env glsl, void *chain, GLuint fbo, int width, int height );
+extern void mlt_glsl_close( glsl_env glsl );
 
 #ifdef __cplusplus
 }

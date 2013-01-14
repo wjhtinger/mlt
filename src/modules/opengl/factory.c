@@ -39,6 +39,7 @@ extern mlt_filter filter_glsl_brightness_init( mlt_profile profile, mlt_service_
 extern mlt_filter filter_glsl_contrast_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
 extern mlt_filter filter_glsl_gamma_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
 extern mlt_filter filter_movit_blur_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
+extern mlt_filter filter_movit_convert_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
 
 extern mlt_transition transition_glsl_luma_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
 
@@ -67,6 +68,7 @@ MLT_REPOSITORY
 	MLT_REGISTER( filter_type, "glsl.contrast", filter_glsl_contrast_init );
 	MLT_REGISTER( filter_type, "glsl.gamma", filter_glsl_gamma_init );
 	MLT_REGISTER( filter_type, "movit.blur", filter_movit_blur_init );
+	MLT_REGISTER( filter_type, "movit.convert", filter_movit_convert_init );
 	MLT_REGISTER( transition_type, "glsl.luma", transition_glsl_luma_init );
 	
 	MLT_REGISTER_METADATA( filter_type, "glsl.greyscale", metadata, "filter_glsl_greyscale.yml" );

@@ -644,7 +644,7 @@ glsl_env mlt_glsl_init( mlt_profile profile )
 
 	if ( !g && ( g = glsl_env_create() ) )
 	{
-		mlt_properties_set_data( prop, prop_name, g, 0, free, NULL );
+		mlt_properties_set_data( prop, prop_name, g, 0, (mlt_destructor) mlt_glsl_close, NULL );
 		fprintf(stderr, "mlt_glsl init done.\n");
 	}
 

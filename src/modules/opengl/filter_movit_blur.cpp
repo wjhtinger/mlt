@@ -26,77 +26,19 @@
 #include "movit/effect_chain.h"
 #include "movit/blur_effect.h"
 
-// Flip upside-down to compensate for different origin.
-template<class T>
-static void vertical_flip(T *data, unsigned width, unsigned height)
-{
-	for (unsigned y = 0; y < height / 2; ++y) {
-		unsigned flip_y = height - y - 1;
-		for (unsigned x = 0; x < width; ++x) {
-			std::swap(data[y * width + x], data[flip_y * width + x]);
-		}
-	}
-}
+static mlt_image_format g_format = mlt_image_none;
 
-// TODO: move this into a colorspace conversion mlt_filter
 static int get_image( mlt_frame frame, uint8_t **image, mlt_image_format *format, int *width, int *height, int writable )
 {
-	*format = mlt_image_rgb24a;
+	*format = g_format;
 	int error = mlt_frame_get_image( frame, image, format, width, height, writable );
-	if ( !error )
-	{
-		glsl_env glsl = mlt_glsl_get( mlt_service_profile( MLT_PRODUCER_SERVICE( mlt_frame_get_original_producer( frame ) ) ) );
-		if ( glsl )
-		{
-			mlt_glsl_set_image( glsl, *image );
-			int rgba_size = mlt_image_format_size( *format, *width, *height, NULL );
-			glsl_texture tex = glsl->get_texture( glsl, *width, *height, GL_RGBA );
-			glsl_fbo fbo = glsl->get_fbo( glsl, *width, *height );
-			// Use a PBO to hold the data we read back with glReadPixels()
-			// (Intel/DRI goes into a slow path if we don't read to PBO)
-			glsl_pbo pbo = glsl->get_pbo( glsl, rgba_size );
-
-			if ( tex && fbo && pbo )
-			{
-				EffectChain* chain = (EffectChain*) glsl->movitChain;
-
-				// Set the FBO
-				glBindFramebuffer( GL_FRAMEBUFFER, fbo->fbo );
-				check_error();
-				glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE_ARB, tex->texture, 0 );
-				check_error();
-				glBindFramebuffer( GL_FRAMEBUFFER, 0 );
-				check_error();
-
-				mlt_glsl_render_fbo( glsl, fbo->fbo, *width, *height );
-
-				// Read FBO into PBO
-				glBindBuffer( GL_PIXEL_PACK_BUFFER_ARB, pbo->pbo );
-				check_error();
-				glBufferData( GL_PIXEL_PACK_BUFFER_ARB, rgba_size, NULL, GL_STREAM_READ );
-				check_error();
-				glReadPixels( 0, 0, *width, *height, GL_RGBA, GL_UNSIGNED_BYTE, BUFFER_OFFSET(0) );
-				check_error();
-
-				// Copy from PBO
-				uint8_t* buf = (uint8_t*) glMapBuffer( GL_PIXEL_PACK_BUFFER_ARB, GL_READ_ONLY );
-				check_error();
-				*image = (uint8_t*) mlt_pool_alloc( rgba_size );
-				mlt_frame_set_image( frame, *image, rgba_size, mlt_pool_release );
-				memcpy( *image, buf, rgba_size );
-				// TODO: add and use a GLSL vertical flip effect
-				vertical_flip( (uint32_t*) *image, *width, *height );
-
-				// Release PBO and FBO
-				glUnmapBuffer( GL_PIXEL_PACK_BUFFER_ARB );
-				check_error();
-				glBindBuffer( GL_PIXEL_PACK_BUFFER_ARB, 0 );
-				check_error();
-				glBindFramebuffer( GL_FRAMEBUFFER, 0 );
-				check_error();
-			}
-			if ( tex ) glsl->release_texture( tex );
-			if ( fbo ) glsl->release_fbo( fbo );
+	if ( !error ) {
+		if ( *format != mlt_image_glsl && frame->convert_image ) {
+			// Pin the requested format to the first one returned.
+			g_format = *format;
+			error = frame->convert_image( frame, image, format, mlt_image_glsl );
+		} else {
+			error = 1;
 		}
 	}
 	return error;
@@ -104,10 +46,10 @@ static int get_image( mlt_frame frame, uint8_t **image, mlt_image_format *format
 
 static mlt_frame process( mlt_filter filter, mlt_frame frame )
 {
-	mlt_frame_push_get_image( frame, get_image );
 	mlt_properties properties = MLT_FILTER_PROPERTIES( filter );
 	Effect* effect = (Effect*) mlt_properties_get_data( properties, "effect", NULL );
 	effect->set_float( "radius", mlt_properties_get_double( properties, "radius" ) );
+	mlt_frame_push_get_image( frame, get_image );
 	return frame;
 }
 
@@ -126,7 +68,7 @@ mlt_filter filter_movit_blur_init( mlt_profile profile, mlt_service_type type, c
 	if ( glsl && ( filter = mlt_filter_new() ) )
 	{
 		mlt_properties properties = MLT_FILTER_PROPERTIES( filter );
-		if ( !mlt_glsl_init_movit( properties, glsl, profile ) )
+		if ( !mlt_glsl_init_movit( glsl, profile ) )
 		{
 			EffectChain* chain = (EffectChain*) glsl->movitChain;
 			Effect* effect = chain->add_effect( new BlurEffect() );

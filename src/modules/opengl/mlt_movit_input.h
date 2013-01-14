@@ -80,20 +80,26 @@ public:
 	}
 
 	// Custom methods
-	void useFlatInput(EffectChain* chain) {
+	void useFlatInput(EffectChain* chain, MovitPixelFormat pix_fmt) {
 		if (!input) {
 			ImageFormat image_format;
 			image_format.color_space = COLORSPACE_sRGB;
 			image_format.gamma_curve = GAMMA_sRGB;
-			input = new FlatInput(image_format, FORMAT_RGBA, GL_UNSIGNED_BYTE, width, height);
+			input = new FlatInput(image_format, pix_fmt, GL_UNSIGNED_BYTE, width, height);
 			chain->add_output(image_format);
+			chain->set_dither_bits(8);
 		}
 	}
 	void useYCbCrInput(EffectChain* chain, const ImageFormat& image_format, const YCbCrFormat& ycbcr_format) {
 		if (!input) {
 			input = new YCbCrInput(image_format, ycbcr_format, width, height);
-			chain->add_output(image_format);
+			ImageFormat output_format;
+			output_format.color_space = COLORSPACE_sRGB;
+			output_format.gamma_curve= GAMMA_sRGB;
+			chain->add_output(output_format);
+			chain->set_dither_bits(8);
 			isRGB = false;
+			m_ycbcr_format = ycbcr_format;
 		}
 	}
 	void set_pixel_data(const unsigned char* data) {
@@ -103,10 +109,9 @@ public:
 			flat->set_pixel_data(data);
 		} else {
 			YCbCrInput* ycbcr = (YCbCrInput*) input;
-			// Assumed to be yuv422p
 			ycbcr->set_pixel_data(0, data);
 			ycbcr->set_pixel_data(1, &data[width * height]);
-			ycbcr->set_pixel_data(2, &data[width * height * 3/2]);
+			ycbcr->set_pixel_data(2, &data[width * height + (width / m_ycbcr_format.chroma_subsampling_x * height / m_ycbcr_format.chroma_subsampling_y)]);
 		}
 	}
 
@@ -115,6 +120,7 @@ private:
 	int output_linear_gamma, needs_mipmaps;
 	Input *input;
 	bool isRGB;
+	YCbCrFormat m_ycbcr_format;
 };
 
 #endif // MLT_MOVIT_INPUT_H
