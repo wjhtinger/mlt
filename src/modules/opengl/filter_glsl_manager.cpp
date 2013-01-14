@@ -126,7 +126,7 @@ void mlt_glsl_render_fbo( glsl_env glsl, void* chain, GLuint fbo, int width, int
 
 void mlt_glsl_close( glsl_env glsl )
 {
-//	delete (EffectChain*) glsl->movitChain;
+	delete (EffectChain*) glsl->movitChain;
 	// TODO: free list members of glsl
 	free( glsl );
 }

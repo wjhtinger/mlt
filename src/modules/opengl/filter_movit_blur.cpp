@@ -53,11 +53,6 @@ static mlt_frame process( mlt_filter filter, mlt_frame frame )
 	return frame;
 }
 
-static void deleteEffect( void *o )
-{
-	delete (Effect*) o;
-}
-
 extern "C" {
 
 mlt_filter filter_movit_blur_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg )
@@ -73,7 +68,7 @@ mlt_filter filter_movit_blur_init( mlt_profile profile, mlt_service_type type, c
 			EffectChain* chain = (EffectChain*) glsl->movitChain;
 			Effect* effect = chain->add_effect( new BlurEffect() );
 
-			mlt_properties_set_data( properties, "effect", effect, 0, deleteEffect, NULL );
+			mlt_properties_set_data( properties, "effect", effect, 0, NULL, NULL );
 			effect->set_int( "width", profile->width );
 			effect->set_int( "height", profile->height );
 			mlt_properties_set_double( properties, "radius", 3 );
