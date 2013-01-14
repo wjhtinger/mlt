@@ -79,6 +79,7 @@ typedef struct
 	GLuint texture;
 	pthread_mutex_t mutex;
 	int new;
+	mlt_frame mlt_frame_ref;
 } frame_new;
 
 
@@ -233,6 +234,8 @@ static void show_frame()
 	glEnd();
 
 	glBindFramebuffer( GL_FRAMEBUFFER, 0 );
+	mlt_frame_close( new_frame.mlt_frame_ref );
+	new_frame.mlt_frame_ref = NULL;
 
 	glMatrixMode(GL_PROJECTION);
     glPopMatrix();
@@ -276,12 +279,17 @@ void* video_thread( void *arg )
 					new_frame.width = width;
 					new_frame.height = height;
 					new_frame.texture = *image;
+					new_frame.mlt_frame_ref = next;
 					new_frame.aspect_ratio = ((double)width / (double)height) * mlt_properties_get_double( properties, "aspect_ratio" );
 					new_frame.new = 1;
 					
 					int loop = 200;
 					while ( new_frame.new && --loop )
 						usleep( 500 );
+				}
+				else
+				{
+					mlt_frame_close( next );
 				}
 				new_frame.new = 0;
 				
@@ -294,13 +302,13 @@ void* video_thread( void *arg )
 			}
 			else
 			{
+				mlt_frame_close( next );
 				static int dropped = 0;
 				mlt_log_info( MLT_CONSUMER_SERVICE(consumer), "dropped video frame %d\n", ++dropped );
 			}
 		}
 		else
 			usleep( 1000 );
-		mlt_frame_close( next );
 	}
 	mlt_consumer_stopped( consumer );
 	
@@ -518,6 +526,7 @@ void start_xgl( consumer_xgl consumer )
 	new_frame.new = 0;
 	new_frame.width = STARTWIDTH;
 	new_frame.height = STARTHEIGHT;
+	new_frame.mlt_frame_ref = NULL;
 	
 	vthread.running = 0;
 	
