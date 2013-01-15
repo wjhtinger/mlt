@@ -105,14 +105,6 @@ int mlt_glsl_init_movit( glsl_env glsl, mlt_profile profile )
 	return error;
 }
 
-void mlt_glsl_set_image( glsl_env glsl, const uint8_t* image )
-{
-	MltInput* input = (MltInput*) glsl->movitInput;
-	EffectChain* chain = (EffectChain*) glsl->movitChain;
-	input->useFlatInput( chain, FORMAT_RGBA );
-	input->set_pixel_data( image );
-}
-
 void mlt_glsl_render_fbo( glsl_env glsl, void* chain, GLuint fbo, int width, int height )
 {
 	EffectChain* effect_chain = (EffectChain*) chain;

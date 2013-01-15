@@ -571,7 +571,6 @@ static glsl_shader glsl_get_shader( glsl_env g, const char *name, const char **s
 	return pshader;
 }
 
-
 void mlt_glsl_start( glsl_env g )
 {
 	if ( g && !g->is_started )
@@ -605,6 +604,7 @@ static glsl_env glsl_env_create()
 		g->release_texture = glsl_release_texture;
 		g->texture_destructor = glsl_texture_destructor;
 		g->get_shader = glsl_get_shader;
+		g->image_format = mlt_image_none;
 	}
 	return g;
 }
