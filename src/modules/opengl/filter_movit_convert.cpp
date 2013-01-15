@@ -92,11 +92,11 @@ static int convert_image( mlt_frame frame, uint8_t **image, mlt_image_format *fo
 
 	if ( *format != mlt_image_glsl ) {
 		if ( *format == mlt_image_rgb24a || *format == mlt_image_opengl ) { 
-			input->useFlatInput( chain, FORMAT_RGBA );
+			input->useFlatInput( chain, FORMAT_RGBA, width, height );
 			input->set_pixel_data( *image );
 		}
 		else if ( *format == mlt_image_rgb24 ) {
-			input->useFlatInput( chain, FORMAT_RGB );
+			input->useFlatInput( chain, FORMAT_RGB, width, height );
 			input->set_pixel_data( *image );
 		}
 		else if ( *format == mlt_image_yuv420p ) {
@@ -120,7 +120,7 @@ static int convert_image( mlt_frame frame, uint8_t **image, mlt_image_format *fo
 			// TODO: make new frame properties set by producers
 			ycbcr_format.cb_x_position = ycbcr_format.cr_x_position = 0.0f;
 			ycbcr_format.cb_y_position = ycbcr_format.cr_y_position = 0.5f;
-			input->useYCbCrInput( chain, image_format, ycbcr_format );
+			input->useYCbCrInput( chain, image_format, ycbcr_format, width, height );
 			input->set_pixel_data( *image );
 		}
 		else if ( *format == mlt_image_yuv422 ) {
@@ -145,7 +145,7 @@ static int convert_image( mlt_frame frame, uint8_t **image, mlt_image_format *fo
 			// TODO: make new frame properties set by producers
 			ycbcr_format.cb_x_position = ycbcr_format.cr_x_position = 0.0f;
 			ycbcr_format.cb_y_position = ycbcr_format.cr_y_position = 0.5f;
-			input->useYCbCrInput( chain, image_format, ycbcr_format );
+			input->useYCbCrInput( chain, image_format, ycbcr_format, width, height );
 			
 			// convert chunky to planar
 			uint8_t* planar = (uint8_t*) mlt_pool_alloc( img_size );

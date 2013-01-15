@@ -28,8 +28,8 @@ class MltInput : public Input
 {
 public:
 	MltInput(unsigned width, unsigned height)
-		: width(width)
-		, height(height)
+		: m_width(width)
+		, m_height(height)
 		, output_linear_gamma(false)
 		, needs_mipmaps(false)
 		, input(0)
@@ -56,8 +56,9 @@ public:
 	// Input ovverrides
 	void finalize() {
 		assert(input);
-		input->set_int("output_linear_gamma", output_linear_gamma);
-		input->set_int("needs_mipmaps", needs_mipmaps);
+		bool ok = input->set_int("output_linear_gamma", output_linear_gamma);
+		ok |= input->set_int("needs_mipmaps", needs_mipmaps);
+		assert(ok);
 		input->finalize();
 	}
 	bool can_output_linear_gamma() const {
@@ -65,10 +66,10 @@ public:
 		return input->can_output_linear_gamma();
 	}
 	unsigned get_width() const {
-		return width;
+		return m_width;
 	}
 	unsigned get_height() const {
-		return height;
+		return m_height;
 	}
 	Colorspace get_color_space() const {
 		assert(input);
@@ -80,8 +81,10 @@ public:
 	}
 
 	// Custom methods
-	void useFlatInput(EffectChain* chain, MovitPixelFormat pix_fmt) {
+	void useFlatInput(EffectChain* chain, MovitPixelFormat pix_fmt, unsigned width, unsigned height) {
 		if (!input) {
+			m_width = width;
+			m_height = height;
 			ImageFormat image_format;
 			image_format.color_space = COLORSPACE_sRGB;
 			image_format.gamma_curve = GAMMA_sRGB;
@@ -90,8 +93,10 @@ public:
 			chain->set_dither_bits(8);
 		}
 	}
-	void useYCbCrInput(EffectChain* chain, const ImageFormat& image_format, const YCbCrFormat& ycbcr_format) {
+	void useYCbCrInput(EffectChain* chain, const ImageFormat& image_format, const YCbCrFormat& ycbcr_format, unsigned width, unsigned height) {
 		if (!input) {
+			m_width = width;
+			m_height = height;
 			input = new YCbCrInput(image_format, ycbcr_format, width, height);
 			ImageFormat output_format;
 			output_format.color_space = COLORSPACE_sRGB;
@@ -110,13 +115,13 @@ public:
 		} else {
 			YCbCrInput* ycbcr = (YCbCrInput*) input;
 			ycbcr->set_pixel_data(0, data);
-			ycbcr->set_pixel_data(1, &data[width * height]);
-			ycbcr->set_pixel_data(2, &data[width * height + (width / m_ycbcr_format.chroma_subsampling_x * height / m_ycbcr_format.chroma_subsampling_y)]);
+			ycbcr->set_pixel_data(1, &data[m_width * m_height]);
+			ycbcr->set_pixel_data(2, &data[m_width * m_height + (m_width / m_ycbcr_format.chroma_subsampling_x * m_height / m_ycbcr_format.chroma_subsampling_y)]);
 		}
 	}
 
 private:
-	unsigned width, height;
+	unsigned m_width, m_height;
 	int output_linear_gamma, needs_mipmaps;
 	Input *input;
 	bool isRGB;
