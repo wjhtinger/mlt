@@ -92,7 +92,7 @@ static int convert_image( mlt_frame frame, uint8_t **image, mlt_image_format *fo
 
 	if ( *format != mlt_image_glsl ) {
 		if ( *format == mlt_image_rgb24a || *format == mlt_image_opengl ) { 
-			input->useFlatInput( chain, FORMAT_RGBA, width, height );
+			input->useFlatInput( chain, FORMAT_RGBA_POSTMULTIPLIED_ALPHA, width, height );
 			input->set_pixel_data( *image );
 		}
 		else if ( *format == mlt_image_rgb24 ) {

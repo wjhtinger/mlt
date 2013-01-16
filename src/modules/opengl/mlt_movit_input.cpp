@@ -74,7 +74,7 @@ void MltInput::useFlatInput(EffectChain* chain, MovitPixelFormat pix_fmt, unsign
 		image_format.color_space = COLORSPACE_sRGB;
 		image_format.gamma_curve = GAMMA_sRGB;
 		input = new FlatInput(image_format, pix_fmt, GL_UNSIGNED_BYTE, width, height);
-		chain->add_output(image_format);
+		chain->add_output(image_format, ::OUTPUT_ALPHA_POSTMULTIPLIED);
 		chain->set_dither_bits(8);
 	}
 }
@@ -86,8 +86,8 @@ void MltInput::useYCbCrInput(EffectChain* chain, const ImageFormat& image_format
 		input = new YCbCrInput(image_format, ycbcr_format, width, height);
 		ImageFormat output_format;
 		output_format.color_space = COLORSPACE_sRGB;
-		output_format.gamma_curve= GAMMA_sRGB;
-		chain->add_output(output_format);
+		output_format.gamma_curve = GAMMA_sRGB;
+		chain->add_output(output_format, ::OUTPUT_ALPHA_POSTMULTIPLIED);
 		chain->set_dither_bits(8);
 		isRGB = false;
 		m_ycbcr_format = ycbcr_format;
