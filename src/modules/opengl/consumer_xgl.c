@@ -189,7 +189,7 @@ static void update()
 
 static void show_frame()
 {
-	fprintf(stderr,"show_frame threadID : %ld\n", syscall(SYS_gettid));
+//	fprintf(stderr,"show_frame threadID : %ld\n", syscall(SYS_gettid));
 	
 	if ( (fb.width != new_frame.width) || (fb.height != new_frame.height) ) {
 		glDeleteFramebuffers( 1, &fb.fbo );
