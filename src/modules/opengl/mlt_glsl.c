@@ -501,8 +501,6 @@ static void glsl_release_texture( glsl_texture tex )
 	tex->used = 0;
 }
 
-
-
 static void glsl_texture_destructor( void *p )
 {
 	glsl_texture tex = (glsl_texture)p;
@@ -510,6 +508,10 @@ static void glsl_texture_destructor( void *p )
 	tex->used = 0;
 }
 
+void mlt_glsl_close_texture( glsl_texture tex )
+{
+	tex->used = 0;
+}
 
 
 static glsl_shader glsl_get_shader( glsl_env g, const char *name, const char **source )

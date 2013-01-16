@@ -132,6 +132,7 @@ extern int mlt_glsl_supported();
 extern glsl_env mlt_glsl_init( mlt_profile profile );
 extern void mlt_glsl_start( glsl_env g );
 extern glsl_env mlt_glsl_get( mlt_profile profile );
+extern void mlt_glsl_close_texture( glsl_texture tex );
 
 extern glsl_texture glsl_rescale_bilinear( glsl_env g, glsl_texture source_tex, int iwidth, int iheight, int owidth, int oheight );
 extern glsl_texture glsl_rescale_bicubic( glsl_env g, glsl_texture source_tex, int iwidth, int iheight, int owidth, int oheight, int spline );

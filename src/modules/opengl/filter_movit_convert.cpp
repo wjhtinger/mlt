@@ -184,7 +184,7 @@ static int convert_image( mlt_frame frame, uint8_t **image, mlt_image_format *fo
 			*image = (uint8_t*) &texture->texture;
 			mlt_frame_set_image( frame, *image, 0, NULL );
 			mlt_properties_set_data( properties, "movit.convert", texture, 0,
-				glsl->texture_destructor, NULL );
+				(mlt_destructor) mlt_glsl_close_texture, NULL );
 			mlt_properties_set_int( properties, "format", output_format );
 			*format = output_format;
 		}
