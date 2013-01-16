@@ -379,7 +379,7 @@ glsl_texture glsl_rescale_bilinear( glsl_env g, glsl_texture source_tex, int iwi
 
 static glsl_fbo glsl_get_fbo( glsl_env g, int width, int height )
 {
-	fprintf( stderr, "glsl_get_fbo, %d\n", g->fbo_list->count);
+	mlt_log_debug( NULL, "glsl_get_fbo, %d\n", g->fbo_list->count);
 	
 	int i;
 
@@ -449,7 +449,7 @@ static glsl_pbo glsl_get_pbo( glsl_env g, int size )
 
 static glsl_texture glsl_get_texture( glsl_env g, int width, int height, GLint internal_format )
 {
-	fprintf( stderr, "glsl_get_texture, %d\n", g->texture_list->count);
+	mlt_log_debug( NULL, "glsl_get_texture, %d\n", g->texture_list->count);
 
 	int i;
 
@@ -514,19 +514,19 @@ static void glsl_texture_destructor( void *p )
 
 static glsl_shader glsl_get_shader( glsl_env g, const char *name, const char **source )
 {
-	fprintf( stderr, "glsl_get_shader, %d\n", g->shader_list->count);
+	mlt_log_debug( NULL, "glsl_get_shader, %d\n", g->shader_list->count);
 
 	int i;
 
 	for ( i=0; i<g->shader_list->count; ++i ) {
 		glsl_shader shader = (glsl_shader)g->shader_list->at( g->shader_list, i );
-		fprintf(stderr, "shader name : %s\n", shader->name);
+		mlt_log_debug( NULL, "shader name : %s\n", shader->name);
 		if ( !strcmp( shader->name, name ) ) {
 			shader->used = 1;
 			return shader;
 		}
 	}
-	fprintf(stderr, "No shader found : %s\n", name);
+	mlt_log_debug( NULL, "No shader found : %s\n", name);
 
 	GLuint shader = glCreateShader( GL_FRAGMENT_SHADER );
 	glShaderSource( shader, 1, source, NULL );
@@ -537,13 +537,13 @@ static glsl_shader glsl_get_shader( glsl_env g, const char *name, const char **s
 	glGetShaderiv( shader, GL_INFO_LOG_LENGTH, &length );
 	log = (GLchar*)malloc( length );
 	if ( !log ) {
-		fprintf( stderr, "Error at %s:%d\n", __FILE__, __LINE__ );
+		mlt_log_error( NULL, "Error at %s:%d\n", __FILE__, __LINE__ );
 		return 0;
 	}
 	glGetShaderInfoLog( shader, length, &length, log );
 	if ( length ) {
-		fprintf( stderr, "Fragment Shader Compilation Log:\n" );
-		fprintf( stderr, "%s", log );
+		mlt_log_debug( NULL, "Fragment Shader Compilation Log:\n" );
+		mlt_log_debug( NULL, "%s", log );
 	}
 	free( log );
 
@@ -553,13 +553,13 @@ static glsl_shader glsl_get_shader( glsl_env g, const char *name, const char **s
 	glGetProgramiv( program, GL_INFO_LOG_LENGTH, &length );
 	log = (GLchar*)malloc( length );
 	if ( !log ) {
-		fprintf( stderr, "Error at %s:%d\n", __FILE__, __LINE__ );
+		mlt_log_error( NULL, "Error at %s:%d\n", __FILE__, __LINE__ );
 		return 0;
 	}
 	glGetProgramInfoLog( program, length, &length, log );
 	if ( length ) {
-		fprintf( stderr, "Linking Log:\n" );
-		fprintf( stderr, "%s", log );
+		mlt_log_debug( NULL, "Linking Log:\n" );
+		mlt_log_debug( NULL, "%s", log );
 	}
 	free( log );
 
@@ -630,7 +630,7 @@ int mlt_glsl_supported()
 	if ( !strstr( extensions, "ARB_vertex_shader" ) )
 		return 0;
 
-	fprintf(stderr, "mlt_glsl is supported.\n");
+	mlt_log_verbose( NULL, "mlt_glsl is supported.\n");
 
 	return 1;
 }
@@ -645,7 +645,7 @@ glsl_env mlt_glsl_init( mlt_profile profile )
 	if ( !g && ( g = glsl_env_create() ) )
 	{
 		mlt_properties_set_data( prop, prop_name, g, 0, (mlt_destructor) mlt_glsl_close, NULL );
-		fprintf(stderr, "mlt_glsl init done.\n");
+		mlt_log_verbose( NULL, "mlt_glsl init done.\n");
 	}
 
 	return g;
