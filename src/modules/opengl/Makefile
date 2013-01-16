@@ -53,6 +53,10 @@ CPPOBJS += movit/sandbox_effect.o
 # Movit MLT services
 CPPOBJS += filter_movit_blur.o
 CPPOBJS += filter_movit_convert.o
+CPPOBJS += filter_movit_mirror.o
+CPPOBJS += filter_movit_resample.o
+CPPOBJS += filter_movit_resize.o
+CPPOBJS += mlt_movit_input.o
 
 ifeq ($(targetos), MinGW)
 	LDFLAGS += -lopengl32
