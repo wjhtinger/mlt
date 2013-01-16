@@ -49,6 +49,7 @@ CPPOBJS += movit/resample_effect.o
 CPPOBJS += movit/dither_effect.o
 CPPOBJS += movit/deconvolution_sharpen_effect.o
 CPPOBJS += movit/sandbox_effect.o
+CPPOBJS += movit/overlay_effect.o
 
 # Movit MLT services
 CPPOBJS += filter_movit_blur.o
