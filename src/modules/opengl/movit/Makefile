@@ -35,6 +35,8 @@ TESTS += overlay_effect_test
 TESTS += gamma_expansion_effect_test
 TESTS += gamma_compression_effect_test
 TESTS += colorspace_conversion_effect_test
+TESTS += alpha_multiplication_effect_test
+TESTS += alpha_division_effect_test
 TESTS += saturation_effect_test
 TESTS += deconvolution_sharpen_effect_test
 TESTS += blur_effect_test
@@ -60,6 +62,8 @@ LIB_OBJS += white_balance_effect.o
 LIB_OBJS += gamma_expansion_effect.o
 LIB_OBJS += gamma_compression_effect.o
 LIB_OBJS += colorspace_conversion_effect.o
+LIB_OBJS += alpha_multiplication_effect.o
+LIB_OBJS += alpha_division_effect.o
 LIB_OBJS += saturation_effect.o
 LIB_OBJS += vignette_effect.o
 LIB_OBJS += mirror_effect.o
@@ -112,11 +116,14 @@ clean:
 	$(RM) -r movit.info coverage/
 
 check: $(TESTS)
-	FAIL=0; \
+	FAILED_TESTS=""; \
 	for TEST in $(TESTS); do \
-	    ./$$TEST || FAIL=1; \
+	    ./$$TEST || FAILED_TESTS="$$TEST $$FAILED_TESTS"; \
 	done; \
-	exit $$FAIL
+	if [ "$$FAILED_TESTS" ]; then \
+		echo Failed tests: $$FAILED_TESTS; \
+		exit 1; \
+	fi
 
 # You need to build with COVERAGE=1 to use this target.
 coverage: check
