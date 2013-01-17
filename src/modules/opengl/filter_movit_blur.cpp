@@ -22,16 +22,18 @@
 #include <assert.h>
 
 #include "mlt_glsl.h"
+#include "glsl_manager.h"
 #include "movit/init.h"
-#include "movit/effect_chain.h"
 #include "movit/blur_effect.h"
 
 static mlt_frame process( mlt_filter filter, mlt_frame frame )
 {
-	mlt_properties properties = MLT_FILTER_PROPERTIES( filter );
-	Effect* effect = (Effect*) mlt_properties_get_data( properties, "effect", NULL );
-	bool ok = effect->set_float( "radius", mlt_properties_get_double( properties, "radius" ) );
-	assert(ok);
+	Effect* effect = mlt_glsl_add_effect( filter, frame, new BlurEffect() );
+	if ( effect ) {
+		mlt_properties filter_props = MLT_FILTER_PROPERTIES( filter );
+		bool ok = effect->set_float( "radius", mlt_properties_get_double( filter_props, "radius" ) );
+		assert(ok);
+	}
 	return frame;
 }
 
@@ -42,23 +44,10 @@ mlt_filter filter_movit_blur_init( mlt_profile profile, mlt_service_type type, c
 	mlt_filter filter = NULL;
 	glsl_env glsl = mlt_glsl_get( profile );
 
-	if ( glsl && ( filter = mlt_filter_new() ) )
-	{
+	if ( glsl && ( filter = mlt_filter_new() ) ) {
 		mlt_properties properties = MLT_FILTER_PROPERTIES( filter );
-		if ( !mlt_glsl_init_movit( glsl, profile ) )
-		{
-			EffectChain* chain = (EffectChain*) glsl->movitChain;
-			Effect* effect = chain->add_effect( new BlurEffect() );
-
-			mlt_properties_set_data( properties, "effect", effect, 0, NULL, NULL );
-			mlt_properties_set_double( properties, "radius", 3 );
-			filter->process = process;
-		}
-		else
-		{
-			mlt_filter_close( filter );
-			filter = NULL;
-		}
+		mlt_properties_set_double( properties, "radius", 3 );
+		filter->process = process;
 	}
 	return filter;
 }

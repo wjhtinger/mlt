@@ -22,6 +22,7 @@
 #include <assert.h>
 
 #include "mlt_glsl.h"
+#include "glsl_manager.h"
 #include "movit/effect_chain.h"
 #include "mlt_movit_input.h"
 
@@ -72,7 +73,8 @@ static int convert_image( mlt_frame frame, uint8_t **image, mlt_image_format *fo
 	if ( *format != mlt_image_glsl && output_format != mlt_image_glsl && output_format != mlt_image_glsl_texture )
 		return convert_on_cpu( frame, image, format, output_format );
 
-	glsl_env glsl = mlt_glsl_get( mlt_service_profile( MLT_PRODUCER_SERVICE( mlt_frame_get_original_producer( frame ) ) ) );
+	mlt_producer producer = mlt_producer_cut_parent( mlt_frame_get_original_producer( frame ) );
+	glsl_env glsl = mlt_glsl_get( mlt_service_profile( MLT_PRODUCER_SERVICE( producer ) ) );
 	if ( !glsl )
 		return 1;
 
@@ -80,8 +82,9 @@ static int convert_image( mlt_frame frame, uint8_t **image, mlt_image_format *fo
 	int width = mlt_properties_get_int( properties, "width" );
 	int height = mlt_properties_get_int( properties, "height" );
 	int img_size = mlt_image_format_size( *format, width, height, NULL );
-	EffectChain* chain = (EffectChain*) glsl->movitChain;
-	MltInput* input = (MltInput*) glsl->movitInput;
+	mlt_properties producer_props = MLT_PRODUCER_PROPERTIES( producer );
+	EffectChain* chain = (EffectChain*) mlt_properties_get_data( producer_props, "movit chain", NULL );
+	MltInput* input = (MltInput*) mlt_properties_get_data( producer_props, "movit input", NULL );
 
 	// Use a temporary chain to convert image in RAM to OpenGL texture.
 	if ( output_format == mlt_image_glsl_texture && *format != mlt_image_glsl ) {
@@ -170,8 +173,8 @@ static int convert_image( mlt_frame frame, uint8_t **image, mlt_image_format *fo
 
 			// Using a temporary chain to convert image in RAM to OpenGL texture.
 			if ( *format != mlt_image_glsl )
-				glsl->movitFinalized = 0;
-			mlt_glsl_render_fbo( glsl, chain, fbo->fbo, width, height );
+				mlt_properties_set_int( producer_props, "_movit finalized", 0 );
+			mlt_glsl_render_fbo( producer, chain, fbo->fbo, width, height );
 
 			glFinish();
 			check_error();
@@ -206,7 +209,7 @@ static int convert_image( mlt_frame frame, uint8_t **image, mlt_image_format *fo
 				glBindFramebuffer( GL_FRAMEBUFFER, 0 );
 				check_error();
 
-				mlt_glsl_render_fbo( glsl, chain, fbo->fbo, width, height );
+				mlt_glsl_render_fbo( producer, chain, fbo->fbo, width, height );
 	
 				// Read FBO into PBO
 				glBindBuffer( GL_PIXEL_PACK_BUFFER_ARB, pbo->pbo );

@@ -22,6 +22,7 @@
 #include <assert.h>
 
 #include "mlt_glsl.h"
+#include "glsl_manager.h"
 #include "movit/init.h"
 #include "movit/effect_chain.h"
 #include "movit/padding_effect.h"
@@ -31,7 +32,6 @@ static int get_image( mlt_frame frame, uint8_t **image, mlt_image_format *format
 	int error = 0;
 	mlt_properties properties = MLT_FRAME_PROPERTIES( frame );
 	mlt_filter filter = (mlt_filter) mlt_frame_pop_service( frame );
-	mlt_properties filter_properties = MLT_FILTER_PROPERTIES( filter );
 	mlt_profile profile = mlt_service_profile( MLT_FILTER_SERVICE( filter ) );
 
 	// Retrieve the aspect ratio
@@ -113,14 +113,15 @@ static int get_image( mlt_frame frame, uint8_t **image, mlt_image_format *format
 	*format = mlt_image_glsl;
 	error = mlt_frame_get_image( frame, image, format, &owidth, &oheight, writable );
 
-	if ( !error )
-	{
-		Effect* effect = (Effect*) mlt_properties_get_data( filter_properties, "effect", NULL );
-		bool ok = effect->set_int( "width", *width );
-		ok |= effect->set_int( "height", *height );
-		ok |= effect->set_float( "left", ( *width - owidth ) / 2 );
-		ok |= effect->set_float( "top", ( *height - oheight ) / 2 );
-		assert(ok);
+	if ( !error ) {
+		Effect* effect = mlt_glsl_get_effect( filter, frame );
+		if ( effect ) {
+			bool ok = effect->set_int( "width", *width );
+			ok |= effect->set_int( "height", *height );
+			ok |= effect->set_float( "left", ( *width - owidth ) / 2 );
+			ok |= effect->set_float( "top", ( *height - oheight ) / 2 );
+			assert(ok);
+		}
 	}
 
 	return error;
@@ -128,6 +129,7 @@ static int get_image( mlt_frame frame, uint8_t **image, mlt_image_format *format
 
 static mlt_frame process( mlt_filter filter, mlt_frame frame )
 {
+	mlt_glsl_add_effect( filter, frame, new PaddingEffect() );
 	mlt_deque_push_back_double( MLT_FRAME_IMAGE_STACK( frame ), mlt_frame_get_aspect_ratio( frame ) );
 	mlt_frame_push_service( frame, filter );
 	mlt_frame_push_get_image( frame, get_image );
@@ -143,18 +145,7 @@ mlt_filter filter_movit_resize_init( mlt_profile profile, mlt_service_type type,
 
 	if ( glsl && ( filter = mlt_filter_new() ) )
 	{
-		if ( !mlt_glsl_init_movit( glsl, profile ) )
-		{
-			EffectChain* chain = (EffectChain*) glsl->movitChain;
-			Effect* effect = chain->add_effect( new PaddingEffect() );
-			mlt_properties_set_data( MLT_FILTER_PROPERTIES(filter), "effect", effect, 0, NULL, NULL );
-			filter->process = process;
-		}
-		else
-		{
-			mlt_filter_close( filter );
-			filter = NULL;
-		}
+		filter->process = process;
 	}
 	return filter;
 }

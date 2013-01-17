@@ -22,8 +22,7 @@
 #include <assert.h>
 
 #include "mlt_glsl.h"
-#include "movit/init.h"
-#include "movit/effect_chain.h"
+#include "glsl_manager.h"
 #include "movit/resample_effect.h"
 
 static int get_image( mlt_frame frame, uint8_t **image, mlt_image_format *format, int *width, int *height, int writable )
@@ -33,7 +32,6 @@ static int get_image( mlt_frame frame, uint8_t **image, mlt_image_format *format
 	mlt_filter filter = (mlt_filter) mlt_frame_pop_service( frame );
 	mlt_properties filter_properties = MLT_FILTER_PROPERTIES( filter );
 	mlt_profile profile = mlt_service_profile( MLT_FILTER_SERVICE( filter ) );
-	glsl_env glsl = mlt_glsl_get( profile );
 
 	// Correct width/height if necessary
 	if ( *width == 0 || *height == 0 )
@@ -64,20 +62,23 @@ static int get_image( mlt_frame frame, uint8_t **image, mlt_image_format *format
 		mlt_properties_set_int( properties, "consumer_deinterlace", 1 );
 
 	// Get the image as requested
-	*format = glsl->image_format;
+//	*format = (mlt_image_format) mlt_properties_get_int( MLT_PRODUCER_PROPERTIES(producer), "_movit image_format" );
+	*format = mlt_image_none;
 	error = mlt_frame_get_image( frame, image, format, &iwidth, &iheight, writable );
 	if ( !error ) {
 		if ( *format != mlt_image_glsl && frame->convert_image ) {
 			// Pin the requested format to the first one returned.
-			glsl->image_format = *format;
+//			mlt_properties_set_int( MLT_PRODUCER_PROPERTIES(producer), "_movit image_format", *format );
 			error = frame->convert_image( frame, image, format, mlt_image_glsl );
 			
-			Effect* effect = (Effect*) mlt_properties_get_data( filter_properties, "effect", NULL );
-			bool ok = effect->set_int( "width", owidth );
-			ok |= effect->set_int( "height", oheight );
-			assert(ok);
-			*width = owidth;
-			*height = oheight;
+			Effect* effect = mlt_glsl_get_effect( filter, frame );
+			if ( effect ) {
+				bool ok = effect->set_int( "width", owidth );
+				ok |= effect->set_int( "height", oheight );
+				assert(ok);
+				*width = owidth;
+				*height = oheight;
+			}
 		} else {
 			error = 1;
 		}
@@ -88,6 +89,10 @@ static int get_image( mlt_frame frame, uint8_t **image, mlt_image_format *format
 
 static mlt_frame process( mlt_filter filter, mlt_frame frame )
 {
+	mlt_producer producer = mlt_producer_cut_parent( mlt_frame_get_original_producer( frame ) );
+	if ( !mlt_glsl_init_movit( producer ) ) {
+		mlt_glsl_add_effect( filter, frame, new ResampleEffect() );
+	}
 	mlt_frame_push_service( frame, filter );
 	mlt_frame_push_get_image( frame, get_image );
 	return frame;
@@ -100,20 +105,8 @@ mlt_filter filter_movit_resample_init( mlt_profile profile, mlt_service_type typ
 	mlt_filter filter = NULL;
 	glsl_env glsl = mlt_glsl_get( profile );
 
-	if ( glsl && ( filter = mlt_filter_new() ) )
-	{
-		if ( !mlt_glsl_init_movit( glsl, profile ) )
-		{
-			EffectChain* chain = (EffectChain*) glsl->movitChain;
-			Effect* effect = chain->add_effect( new ResampleEffect() );
-			mlt_properties_set_data( MLT_FILTER_PROPERTIES(filter), "effect", effect, 0, NULL, NULL );
-			filter->process = process;
-		}
-		else
-		{
-			mlt_filter_close( filter );
-			filter = NULL;
-		}
+	if ( glsl && ( filter = mlt_filter_new() ) ) {
+		filter->process = process;
 	}
 	return filter;
 }

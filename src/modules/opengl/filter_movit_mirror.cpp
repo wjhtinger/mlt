@@ -22,9 +22,15 @@
 #include <assert.h>
 
 #include "mlt_glsl.h"
+#include "glsl_manager.h"
 #include "movit/init.h"
-#include "movit/effect_chain.h"
 #include "movit/mirror_effect.h"
+
+static mlt_frame process( mlt_filter filter, mlt_frame frame )
+{
+	mlt_glsl_add_effect( filter, frame, new MirrorEffect() );
+	return frame;
+}
 
 extern "C" {
 
@@ -33,18 +39,8 @@ mlt_filter filter_movit_mirror_init( mlt_profile profile, mlt_service_type type,
 	mlt_filter filter = NULL;
 	glsl_env glsl = mlt_glsl_get( profile );
 
-	if ( glsl && ( filter = mlt_filter_new() ) )
-	{
-		if ( !mlt_glsl_init_movit( glsl, profile ) )
-		{
-			EffectChain* chain = (EffectChain*) glsl->movitChain;
-			chain->add_effect( new MirrorEffect() );
-		}
-		else
-		{
-			mlt_filter_close( filter );
-			filter = NULL;
-		}
+	if ( glsl && ( filter = mlt_filter_new() ) ) {
+		filter->process = process;
 	}
 	return filter;
 }
