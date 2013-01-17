@@ -89,10 +89,10 @@ Input *EffectChainTester::add_input(const unsigned char *data, MovitPixelFormat 
 	return input;
 }
 
-void EffectChainTester::run(float *out_data, GLenum format, Colorspace color_space, GammaCurve gamma_curve)
+void EffectChainTester::run(float *out_data, GLenum format, Colorspace color_space, GammaCurve gamma_curve, OutputAlphaFormat alpha_format)
 {
 	if (!finalized) {
-		finalize_chain(color_space, gamma_curve);
+		finalize_chain(color_space, gamma_curve, alpha_format);
 	}
 
 	chain.render_to_fbo(fbo, width, height);
@@ -107,10 +107,10 @@ void EffectChainTester::run(float *out_data, GLenum format, Colorspace color_spa
 	vertical_flip(out_data, width, height);
 }
 
-void EffectChainTester::run(unsigned char *out_data, GLenum format, Colorspace color_space, GammaCurve gamma_curve)
+void EffectChainTester::run(unsigned char *out_data, GLenum format, Colorspace color_space, GammaCurve gamma_curve, OutputAlphaFormat alpha_format)
 {
 	if (!finalized) {
-		finalize_chain(color_space, gamma_curve);
+		finalize_chain(color_space, gamma_curve, alpha_format);
 	}
 
 	chain.render_to_fbo(fbo, width, height);
@@ -125,13 +125,13 @@ void EffectChainTester::run(unsigned char *out_data, GLenum format, Colorspace c
 	vertical_flip(out_data, width, height);
 }
 
-void EffectChainTester::finalize_chain(Colorspace color_space, GammaCurve gamma_curve)
+void EffectChainTester::finalize_chain(Colorspace color_space, GammaCurve gamma_curve, OutputAlphaFormat alpha_format)
 {
 	assert(!finalized);
 	ImageFormat image_format;
 	image_format.color_space = color_space;
 	image_format.gamma_curve = gamma_curve;
-	chain.add_output(image_format);
+	chain.add_output(image_format, alpha_format);
 	chain.finalize();
 	finalized = true;
 }
@@ -185,6 +185,9 @@ void expect_equal(const float *ref, const float *result, unsigned width, unsigne
 
 void expect_equal(const unsigned char *ref, const unsigned char *result, unsigned width, unsigned height, unsigned largest_difference_limit, float rms_limit)
 {
+	assert(width > 0);
+	assert(height > 0);
+
 	float *ref_float = new float[width * height];
 	float *result_float = new float[width * height];
 
@@ -196,4 +199,7 @@ void expect_equal(const unsigned char *ref, const unsigned char *result, unsigne
 	}
 
 	expect_equal(ref_float, result_float, width, height, largest_difference_limit, rms_limit);
+
+	delete[] ref_float;
+	delete[] result_float;
 }

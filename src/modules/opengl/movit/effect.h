@@ -40,12 +40,21 @@ struct RGBTriplet {
 	float r, g, b;
 };
 
+// Can alias on a float[4].
+struct RGBATriplet {
+	RGBATriplet(float r, float g, float b, float a)
+		: r(r), g(g), b(b), a(a) {}
+
+	float r, g, b, a;
+};
+
 // Convenience functions that deal with prepending the prefix.
 GLint get_uniform_location(GLuint glsl_program_num, const std::string &prefix, const std::string &key);
 void set_uniform_int(GLuint glsl_program_num, const std::string &prefix, const std::string &key, int value);
 void set_uniform_float(GLuint glsl_program_num, const std::string &prefix, const std::string &key, float value);
 void set_uniform_vec2(GLuint glsl_program_num, const std::string &prefix, const std::string &key, const float *values);
 void set_uniform_vec3(GLuint glsl_program_num, const std::string &prefix, const std::string &key, const float *values);
+void set_uniform_vec4(GLuint glsl_program_num, const std::string &prefix, const std::string &key, const float *values);
 void set_uniform_vec4_array(GLuint glsl_program_num, const std::string &prefix, const std::string &key, const float *values, size_t num_values);
 void set_uniform_mat3(GLuint glsl_program_num, const std::string &prefix, const std::string &key, const Eigen::Matrix3d &matrix);
 
@@ -77,6 +86,49 @@ public:
 	// if you process each channel independently, equally _and_
 	// in a linear fashion.
 	virtual bool needs_srgb_primaries() const { return true; }
+
+	// How this effect handles alpha, ie. what it outputs in its
+	// alpha channel. The choices are basically blank (alpha is always 1.0),
+	// premultiplied and postmultiplied.
+	//
+	// Premultiplied alpha is when the alpha value has been be multiplied
+	// into the three color components, so e.g. 100% red at 50% alpha
+	// would be (0.5, 0.0, 0.0, 0.5) instead of (1.0, 0.0, 0.0, 0.5)
+	// as it is stored in most image formats (postmultiplied alpha).
+	// The multiplication is taken to have happened in linear light.
+	// This is the most natural format for processing, and the default in
+	// most of Movit (just like linear light is).
+	//
+	// If you set INPUT_AND_OUTPUT_ALPHA_PREMULTIPLIED, all of your inputs
+	// (if any) are guaranteed to also be in premultiplied alpha.
+	// Otherwise, you can get postmultiplied or premultiplied alpha;
+	// you won't know. If you have multiple inputs, you will get the same
+	// (pre- or postmultiplied) for all inputs, although most likely,
+	// you will want to combine them in a premultiplied fashion anyway
+	// in that case.
+	enum AlphaHandling {
+		// Always outputs blank alpha (ie. alpha=1.0). Only appropriate
+		// for inputs that do not output an alpha channel.
+		// Blank alpha is special in that it can be treated as both
+		// pre- and postmultiplied.
+		OUTPUT_BLANK_ALPHA,
+
+		// Always outputs premultiplied alpha. As noted above,
+		// you will then also get all inputs in premultiplied alpha.
+		// If you set this, you should also set needs_linear_light().
+		INPUT_AND_OUTPUT_ALPHA_PREMULTIPLIED,
+
+		// Always outputs postmultiplied alpha. Only appropriate for inputs.
+		OUTPUT_ALPHA_POSTMULTIPLIED,
+
+		// Keeps the type of alpha unchanged from input to output.
+		// Usually appropriate if you process all color channels
+		// in a linear fashion, and do not change alpha.
+		//
+		// Does not make sense for inputs.
+		DONT_CARE_ALPHA_TYPE,
+	};
+	virtual AlphaHandling alpha_handling() const { return INPUT_AND_OUTPUT_ALPHA_PREMULTIPLIED; }
 
 	// Whether this effect expects its input to come directly from
 	// a texture. If this is true, the framework will not chain the
@@ -183,6 +235,7 @@ public:
 	virtual bool set_float(const std::string &key, float value) MUST_CHECK_RESULT;
 	virtual bool set_vec2(const std::string &key, const float *values) MUST_CHECK_RESULT;
 	virtual bool set_vec3(const std::string &key, const float *values) MUST_CHECK_RESULT;
+	virtual bool set_vec4(const std::string &key, const float *values) MUST_CHECK_RESULT;
 
 protected:
 	// Register a parameter. Whenever set_*() is called with the same key,
@@ -195,10 +248,11 @@ protected:
 	// Thus, ints that you register will _not_ be converted to GLSL uniforms.
 	void register_int(const std::string &key, int *value);
 
-	// These correspond directly to float/vec2/vec3 in GLSL.
+	// These correspond directly to float/vec2/vec3/vec4 in GLSL.
 	void register_float(const std::string &key, float *value);
 	void register_vec2(const std::string &key, float *values);
 	void register_vec3(const std::string &key, float *values);
+	void register_vec4(const std::string &key, float *values);
 
 	// This will register a 1D texture, which will be bound to a sampler
 	// when your GLSL code runs (so it corresponds 1:1 to a sampler2D uniform
@@ -223,6 +277,7 @@ private:
 	std::map<std::string, float *> params_float;
 	std::map<std::string, float *> params_vec2;
 	std::map<std::string, float *> params_vec3;
+	std::map<std::string, float *> params_vec4;
 	std::map<std::string, Texture1D> params_tex_1d;
 };
 
