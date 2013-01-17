@@ -39,9 +39,16 @@ std::string MltInput::output_fragment_shader() {
 	assert(input);
 	return input->output_fragment_shader();
 }
+
 void MltInput::set_gl_state(GLuint glsl_program_num, const std::string& prefix, unsigned *sampler_num) {
 	assert(input);
 	input->set_gl_state(glsl_program_num, prefix, sampler_num);
+}
+
+Effect::AlphaHandling MltInput::alpha_handling() const
+{
+	assert(input);
+	return input->alpha_handling();
 }
 
 void MltInput::finalize() {
