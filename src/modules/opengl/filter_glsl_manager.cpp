@@ -24,6 +24,13 @@
 #include "movit/effect_chain.h"
 #include "mlt_movit_input.h"
 
+extern "C"
+{
+int mlt_glsl_supported();
+glsl_env mlt_glsl_init( mlt_profile profile );
+void mlt_glsl_start( glsl_env g );
+}
+
 class GlslManager : public Mlt::Filter
 {
 public:
@@ -92,36 +99,60 @@ mlt_filter filter_glsl_manager_init( mlt_profile profile, mlt_service_type type,
 	return g->get_filter();
 }
 
-int mlt_glsl_init_movit( glsl_env glsl, mlt_profile profile )
+} // extern "C"
+
+static void deleteChain( EffectChain* chain )
 {
-	int error = 0;
-	if ( !glsl->movitChain )
-	{
+	delete chain;
+}
+
+int mlt_glsl_init_movit( mlt_producer producer )
+{
+	int error = 1;
+	mlt_properties properties = MLT_PRODUCER_PROPERTIES( producer );
+	EffectChain* chain = (EffectChain*) mlt_properties_get_data( properties, "movit chain", NULL );
+	if ( !chain ) {
+		mlt_profile profile = mlt_service_profile( MLT_PRODUCER_SERVICE( producer ) );
 		MltInput* input = new MltInput( profile->width, profile->height );
-		EffectChain *chain = new EffectChain( mlt_profile_dar( profile ), 1.0f );
-		glsl->movitChain = chain;
-		glsl->movitInput = input;
+		chain = new EffectChain( mlt_profile_dar( profile ), 1.0f );
 		chain->add_input( input );
+		mlt_properties_set_data( properties, "movit chain", chain, 0, (mlt_destructor) deleteChain, NULL );
+		mlt_properties_set_data( properties, "movit input", input, 0, NULL, NULL );
+		mlt_properties_set_int( properties, "_movit finalized", 0 );
+		error = 0;
 	}
 	return error;
 }
 
-void mlt_glsl_render_fbo( glsl_env glsl, void* chain, GLuint fbo, int width, int height )
+Effect* mlt_glsl_get_effect( mlt_filter filter, mlt_frame frame )
+{
+	mlt_producer producer = mlt_producer_cut_parent( mlt_frame_get_original_producer( frame ) );
+	mlt_properties properties = MLT_PRODUCER_PROPERTIES( producer );
+	char *unique_id = mlt_properties_get( MLT_FILTER_PROPERTIES(filter), "_unique_id" );
+	return (Effect*) mlt_properties_get_data( properties, unique_id, NULL );
+}
+
+Effect* mlt_glsl_add_effect( mlt_filter filter, mlt_frame frame, Effect* effect )
+{
+	if ( !mlt_glsl_get_effect( filter, frame ) ) {
+		mlt_producer producer = mlt_producer_cut_parent( mlt_frame_get_original_producer( frame ) );
+		mlt_properties properties = MLT_PRODUCER_PROPERTIES( producer );
+		char *unique_id = mlt_properties_get( MLT_FILTER_PROPERTIES(filter), "_unique_id" );
+		EffectChain* chain = (EffectChain*) mlt_properties_get_data( properties, "movit chain", NULL );
+		chain->add_effect( effect );
+		mlt_properties_set_data( properties, unique_id, effect, 0, NULL, NULL );
+	}
+	return effect;
+}
+
+void mlt_glsl_render_fbo( mlt_producer producer, void* chain, GLuint fbo, int width, int height )
 {
 	EffectChain* effect_chain = (EffectChain*) chain;
-	if ( !glsl->movitFinalized ) {
-		glsl->movitFinalized = 1;
+	mlt_properties properties = MLT_PRODUCER_PROPERTIES( producer );
+	if ( !mlt_properties_get_int( properties, "_movit finalized" ) ) {
+		mlt_properties_set_int( properties, "_movit finalized", 1 );
 		effect_chain->add_effect( new Mlt::VerticalFlip() );
 		effect_chain->finalize();
 	}
 	effect_chain->render_to_fbo( fbo, width, height );
-}
-
-void mlt_glsl_close( glsl_env glsl )
-{
-	delete (EffectChain*) glsl->movitChain;
-	// TODO: free list members of glsl
-	free( glsl );
-}
-
 }

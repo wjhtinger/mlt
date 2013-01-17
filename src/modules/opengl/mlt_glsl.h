@@ -117,10 +117,6 @@ struct glsl_env_s
 	glsl_texture bicubic_lut;
 	
 	int is_started;
-	void *movitChain;
-	void *movitInput;
-	int movitFinalized;
-	mlt_image_format image_format;
 };
 
 #ifdef __cplusplus
@@ -128,9 +124,6 @@ extern "C"
 {
 #endif
 
-extern int mlt_glsl_supported();
-extern glsl_env mlt_glsl_init( mlt_profile profile );
-extern void mlt_glsl_start( glsl_env g );
 extern glsl_env mlt_glsl_get( mlt_profile profile );
 extern void mlt_glsl_close_texture( glsl_texture tex );
 
@@ -138,11 +131,6 @@ extern glsl_texture glsl_rescale_bilinear( glsl_env g, glsl_texture source_tex, 
 extern glsl_texture glsl_rescale_bicubic( glsl_env g, glsl_texture source_tex, int iwidth, int iheight, int owidth, int oheight, int spline );
 extern void glsl_set_ortho_view( int width, int height );
 extern void glsl_draw_quad( float x1, float y1, float x2, float y2 );
-
-/* These are implemented in filter_glsl_manager.cpp. */
-extern int mlt_glsl_init_movit( glsl_env glsl, mlt_profile profile );
-extern void mlt_glsl_render_fbo( glsl_env glsl, void *chain, GLuint fbo, int width, int height );
-extern void mlt_glsl_close( glsl_env glsl );
 
 #ifdef __cplusplus
 }

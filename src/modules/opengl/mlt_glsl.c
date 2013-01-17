@@ -606,7 +606,6 @@ static glsl_env glsl_env_create()
 		g->release_texture = glsl_release_texture;
 		g->texture_destructor = glsl_texture_destructor;
 		g->get_shader = glsl_get_shader;
-		g->image_format = mlt_image_none;
 	}
 	return g;
 }
@@ -635,6 +634,12 @@ int mlt_glsl_supported()
 	mlt_log_verbose( NULL, "mlt_glsl is supported.\n");
 
 	return 1;
+}
+
+static void mlt_glsl_close( glsl_env glsl )
+{
+	// TODO: free list members of glsl
+	free( glsl );
 }
 
 glsl_env mlt_glsl_init( mlt_profile profile )
