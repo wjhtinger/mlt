@@ -52,6 +52,7 @@ CPPOBJS += movit/sandbox_effect.o
 CPPOBJS += movit/overlay_effect.o
 CPPOBJS += movit/alpha_division_effect.o
 CPPOBJS += movit/alpha_multiplication_effect.o
+CPPOBJS += movit/padding_effect.o
 
 # Movit MLT services
 CPPOBJS += filter_movit_blur.o

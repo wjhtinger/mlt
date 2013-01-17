@@ -24,7 +24,7 @@
 #include "mlt_glsl.h"
 #include "movit/init.h"
 #include "movit/effect_chain.h"
-#include "movit/resize_effect.h"
+#include "movit/padding_effect.h"
 
 static int get_image( mlt_frame frame, uint8_t **image, mlt_image_format *format, int *width, int *height, int writable )
 {
@@ -110,6 +110,7 @@ static int get_image( mlt_frame frame, uint8_t **image, mlt_image_format *format
 	// Now get the image
 	if ( *format == mlt_image_yuv422 )
 		owidth -= owidth % 2;
+	*format = mlt_image_glsl;
 	error = mlt_frame_get_image( frame, image, format, &owidth, &oheight, writable );
 
 	if ( !error )
@@ -117,6 +118,8 @@ static int get_image( mlt_frame frame, uint8_t **image, mlt_image_format *format
 		Effect* effect = (Effect*) mlt_properties_get_data( filter_properties, "effect", NULL );
 		bool ok = effect->set_int( "width", *width );
 		ok |= effect->set_int( "height", *height );
+		ok |= effect->set_float( "left", ( *width - owidth ) / 2 );
+		ok |= effect->set_float( "top", ( *height - oheight ) / 2 );
 		assert(ok);
 	}
 
@@ -143,7 +146,7 @@ mlt_filter filter_movit_resize_init( mlt_profile profile, mlt_service_type type,
 		if ( !mlt_glsl_init_movit( glsl, profile ) )
 		{
 			EffectChain* chain = (EffectChain*) glsl->movitChain;
-			Effect* effect = chain->add_effect( new ResizeEffect() );
+			Effect* effect = chain->add_effect( new PaddingEffect() );
 			mlt_properties_set_data( MLT_FILTER_PROPERTIES(filter), "effect", effect, 0, NULL, NULL );
 			filter->process = process;
 		}
