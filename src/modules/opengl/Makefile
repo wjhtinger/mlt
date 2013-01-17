@@ -6,20 +6,7 @@ include ../../../config.mak
 
 TARGET = ../libmltopengl$(LIBSUF)
 
-OBJS = factory.o \
-	mlt_glsl.o \
-	filter_glsl_greyscale.o \
-	filter_glsl_csc.o \
-	filter_glsl_crop.o \
-	filter_glsl_saturation.o \
-	filter_glsl_resize.o \
-	filter_glsl_fieldorder.o \
-	filter_glsl_rescale.o \
-	filter_glsl_deinterlace.o \
-	filter_glsl_brightness.o \
-	filter_glsl_contrast.o \
-	filter_glsl_gamma.o \
-	transition_glsl_luma.o
+OBJS = factory.o mlt_glsl.o
 
 CPPOBJS = filter_glsl_manager.o
 

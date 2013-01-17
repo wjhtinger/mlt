@@ -25,19 +25,7 @@
 
 
 extern mlt_consumer consumer_xgl_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
-
 extern mlt_filter filter_glsl_manager_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
-extern mlt_filter filter_glsl_greyscale_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
-extern mlt_filter filter_glsl_csc_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
-extern mlt_filter filter_glsl_crop_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
-extern mlt_filter filter_glsl_saturation_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
-extern mlt_filter filter_glsl_resize_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
-extern mlt_filter filter_glsl_fieldorder_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
-extern mlt_filter filter_glsl_rescale_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
-extern mlt_filter filter_glsl_deinterlace_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
-extern mlt_filter filter_glsl_brightness_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
-extern mlt_filter filter_glsl_contrast_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
-extern mlt_filter filter_glsl_gamma_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
 extern mlt_filter filter_movit_blur_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
 extern mlt_filter filter_movit_convert_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
 extern mlt_filter filter_movit_mirror_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
@@ -59,34 +47,9 @@ MLT_REPOSITORY
 	MLT_REGISTER( consumer_type, "xgl", consumer_xgl_init );
 #endif
 	MLT_REGISTER( filter_type, "glsl.manager", filter_glsl_manager_init );
-	MLT_REGISTER( filter_type, "glsl.greyscale", filter_glsl_greyscale_init );
-	MLT_REGISTER( filter_type, "glsl.csc", filter_glsl_csc_init );
-	MLT_REGISTER( filter_type, "glsl.crop", filter_glsl_crop_init );
-	MLT_REGISTER( filter_type, "glsl.saturation", filter_glsl_saturation_init );
-	MLT_REGISTER( filter_type, "glsl.resize", filter_glsl_resize_init );
-	MLT_REGISTER( filter_type, "glsl.fieldorder", filter_glsl_fieldorder_init );
-	MLT_REGISTER( filter_type, "glsl.rescale", filter_glsl_rescale_init );
-	MLT_REGISTER( filter_type, "glsl.deinterlace", filter_glsl_deinterlace_init );
-	MLT_REGISTER( filter_type, "glsl.brightness", filter_glsl_brightness_init );
-	MLT_REGISTER( filter_type, "glsl.contrast", filter_glsl_contrast_init );
-	MLT_REGISTER( filter_type, "glsl.gamma", filter_glsl_gamma_init );
 	MLT_REGISTER( filter_type, "movit.blur", filter_movit_blur_init );
 	MLT_REGISTER( filter_type, "movit.convert", filter_movit_convert_init );
 	MLT_REGISTER( filter_type, "movit.mirror", filter_movit_mirror_init );
 	MLT_REGISTER( filter_type, "movit.resample", filter_movit_resample_init );
 	MLT_REGISTER( filter_type, "movit.resize", filter_movit_resize_init );
-	MLT_REGISTER( transition_type, "glsl.luma", transition_glsl_luma_init );
-	
-	MLT_REGISTER_METADATA( filter_type, "glsl.greyscale", metadata, "filter_glsl_greyscale.yml" );
-	MLT_REGISTER_METADATA( filter_type, "glsl.csc", metadata, "filter_glsl_csc.yml" );
-	MLT_REGISTER_METADATA( filter_type, "glsl.crop", metadata, "filter_glsl_crop.yml" );
-	MLT_REGISTER_METADATA( filter_type, "glsl.saturation", metadata, "filter_glsl_saturation.yml" );
-	MLT_REGISTER_METADATA( filter_type, "glsl.resize", metadata, "filter_glsl_resize.yml" );
-	MLT_REGISTER_METADATA( filter_type, "glsl.fieldorder", metadata, "filter_glsl_fieldorder.yml" );
-	MLT_REGISTER_METADATA( filter_type, "glsl.rescale", metadata, "filter_glsl_rescale.yml" );
-	MLT_REGISTER_METADATA( filter_type, "glsl.deinterlace", metadata, "filter_glsl_deinterlace.yml" );
-	MLT_REGISTER_METADATA( filter_type, "glsl.brightness", metadata, "filter_glsl_brightness.yml" );
-	MLT_REGISTER_METADATA( filter_type, "glsl.contrast", metadata, "filter_glsl_contrast.yml" );
-	MLT_REGISTER_METADATA( filter_type, "glsl.gamma", metadata, "filter_glsl_gamma.yml" );
-	MLT_REGISTER_METADATA( transition_type, "glsl.luma", metadata, "transition_glsl_luma.yml" );
 }
