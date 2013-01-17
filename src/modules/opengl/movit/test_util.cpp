@@ -89,10 +89,10 @@ Input *EffectChainTester::add_input(const unsigned char *data, MovitPixelFormat 
 	return input;
 }
 
-void EffectChainTester::run(float *out_data, GLenum format, Colorspace color_space, GammaCurve gamma_curve, OutputAlphaFormat alpha_format)
+void EffectChainTester::run(float *out_data, GLenum format, Colorspace color_space, GammaCurve gamma_curve)
 {
 	if (!finalized) {
-		finalize_chain(color_space, gamma_curve, alpha_format);
+		finalize_chain(color_space, gamma_curve);
 	}
 
 	chain.render_to_fbo(fbo, width, height);
@@ -107,10 +107,10 @@ void EffectChainTester::run(float *out_data, GLenum format, Colorspace color_spa
 	vertical_flip(out_data, width, height);
 }
 
-void EffectChainTester::run(unsigned char *out_data, GLenum format, Colorspace color_space, GammaCurve gamma_curve, OutputAlphaFormat alpha_format)
+void EffectChainTester::run(unsigned char *out_data, GLenum format, Colorspace color_space, GammaCurve gamma_curve)
 {
 	if (!finalized) {
-		finalize_chain(color_space, gamma_curve, alpha_format);
+		finalize_chain(color_space, gamma_curve);
 	}
 
 	chain.render_to_fbo(fbo, width, height);
@@ -125,13 +125,13 @@ void EffectChainTester::run(unsigned char *out_data, GLenum format, Colorspace c
 	vertical_flip(out_data, width, height);
 }
 
-void EffectChainTester::finalize_chain(Colorspace color_space, GammaCurve gamma_curve, OutputAlphaFormat alpha_format)
+void EffectChainTester::finalize_chain(Colorspace color_space, GammaCurve gamma_curve)
 {
 	assert(!finalized);
 	ImageFormat image_format;
 	image_format.color_space = color_space;
 	image_format.gamma_curve = gamma_curve;
-	chain.add_output(image_format, alpha_format);
+	chain.add_output(image_format);
 	chain.finalize();
 	finalized = true;
 }

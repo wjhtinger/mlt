@@ -169,7 +169,7 @@ int main(int argc, char **argv)
 	inout_format.color_space = COLORSPACE_sRGB;
 	inout_format.gamma_curve = GAMMA_sRGB;
 
-	FlatInput *input = new FlatInput(inout_format, FORMAT_BGRA_POSTMULTIPLIED_ALPHA, GL_UNSIGNED_BYTE, img_w, img_h);
+	FlatInput *input = new FlatInput(inout_format, FORMAT_BGRA, GL_UNSIGNED_BYTE, img_w, img_h);
 	chain.add_input(input);
 	Effect *lift_gamma_gain_effect = chain.add_effect(new LiftGammaGainEffect());
 	Effect *saturation_effect = chain.add_effect(new SaturationEffect());
@@ -178,7 +178,7 @@ int main(int argc, char **argv)
 	//Effect *sandbox_effect = chain.add_effect(new SandboxEffect());
 	//sandbox_effect->set_float("parm", 42.0f);
 	//chain.add_effect(new MirrorEffect());
-	chain.add_output(inout_format, OUTPUT_ALPHA_POSTMULTIPLIED);
+	chain.add_output(inout_format);
 	chain.set_dither_bits(8);
 	chain.finalize();
 

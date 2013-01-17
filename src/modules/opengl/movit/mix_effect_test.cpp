@@ -54,30 +54,28 @@ TEST(MixEffectTest, OnlyA) {
 
 TEST(MixEffectTest, DoesNotSumToOne) {
 	float data_a[] = {
-		1.0f, 0.5f, 0.75f, 0.333f,
+		1.0f, 0.5f,
+		0.75f, 1.0f,
 	};
 	float data_b[] = {
-		1.0f, 0.25f, 0.15f, 0.333f,
+		1.0f, 0.25f,
+		0.15f, 0.6f,
 	};
-
-	// The fact that the RGB values don't sum but get averaged here might
-	// actually be a surprising result, but when you think of it,
-	// it does make physical sense.
 	float expected_data[] = {
-		1.0f, 0.375f, 0.45f, 0.666f,
+		0.0f, 0.25f,
+		0.6f, 0.4f,
 	};
-
 	float out_data[4];
-	EffectChainTester tester(data_a, 1, 1, FORMAT_RGBA_POSTMULTIPLIED_ALPHA, COLORSPACE_sRGB, GAMMA_LINEAR);
+	EffectChainTester tester(data_a, 2, 2, FORMAT_GRAYSCALE, COLORSPACE_sRGB, GAMMA_LINEAR);
 	Effect *input1 = tester.get_chain()->last_added_effect();
-	Effect *input2 = tester.add_input(data_b, FORMAT_RGBA_POSTMULTIPLIED_ALPHA, COLORSPACE_sRGB, GAMMA_LINEAR);
+	Effect *input2 = tester.add_input(data_b, FORMAT_GRAYSCALE, COLORSPACE_sRGB, GAMMA_LINEAR);
 
 	Effect *mix_effect = tester.get_chain()->add_effect(new MixEffect(), input1, input2);
 	ASSERT_TRUE(mix_effect->set_float("strength_first", 1.0f));
-	ASSERT_TRUE(mix_effect->set_float("strength_second", 1.0f));
-	tester.run(out_data, GL_RGBA, COLORSPACE_sRGB, GAMMA_LINEAR);
+	ASSERT_TRUE(mix_effect->set_float("strength_second", -1.0f));
+	tester.run(out_data, GL_RED, COLORSPACE_sRGB, GAMMA_LINEAR);
 
-	expect_equal(expected_data, out_data, 4, 1);
+	expect_equal(expected_data, out_data, 2, 2);
 }
 
 TEST(MixEffectTest, MixesLinearlyDespitesRGBInputsAndOutputs) {

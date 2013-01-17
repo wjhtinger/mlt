@@ -44,7 +44,7 @@ void FlatInput::finalize()
 		internal_format = GL_RGBA16F_ARB;
 	} else if (output_linear_gamma) {
 		assert(type == GL_UNSIGNED_BYTE);
-		internal_format = GL_SRGB8_ALPHA8;
+		internal_format = GL_SRGB8;
 	} else {
 		assert(type == GL_UNSIGNED_BYTE);
 		internal_format = GL_RGBA8;
@@ -52,15 +52,13 @@ void FlatInput::finalize()
 	if (pixel_format == FORMAT_RGB) {
 		format = GL_RGB;
 		bytes_per_pixel = 3;
-	} else if (pixel_format == FORMAT_RGBA_PREMULTIPLIED_ALPHA ||
-	           pixel_format == FORMAT_RGBA_POSTMULTIPLIED_ALPHA) {
+	} else if (pixel_format == FORMAT_RGBA) {
 		format = GL_RGBA;
 		bytes_per_pixel = 4;
 	} else if (pixel_format == FORMAT_BGR) {
 		format = GL_BGR;
 		bytes_per_pixel = 3;
-	} else if (pixel_format == FORMAT_BGRA_PREMULTIPLIED_ALPHA ||
-	           pixel_format == FORMAT_BGRA_POSTMULTIPLIED_ALPHA) {
+	} else if (pixel_format == FORMAT_BGRA) {
 		format = GL_BGRA;
 		bytes_per_pixel = 4;
 	} else if (pixel_format == FORMAT_GRAYSCALE) {

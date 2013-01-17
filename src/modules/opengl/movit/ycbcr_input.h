@@ -41,7 +41,6 @@ public:
 	void finalize();
 
 	virtual bool can_output_linear_gamma() const { return false; }
-	virtual AlphaHandling alpha_handling() const { return OUTPUT_BLANK_ALPHA; }
 
 	std::string output_fragment_shader();
 
