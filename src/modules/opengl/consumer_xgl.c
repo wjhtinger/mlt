@@ -546,7 +546,6 @@ static void on_consumer_thread_started( mlt_properties owner, HiddenContext* con
 	fprintf(stderr, "%s: %ld\n", __FUNCTION__, syscall(SYS_gettid));
 	// Initialize this thread's OpenGL state
 	glXMakeCurrent( context->dpy, context->win, context->ctx );
-	mlt_events_fire( MLT_FILTER_PROPERTIES(glsl_manager), "start glsl", NULL );
 }
 
 /** Forward references to static functions.
@@ -612,7 +611,6 @@ mlt_consumer consumer_xgl_init( mlt_profile profile, mlt_service_type type, cons
 		glsl_manager = mlt_factory_filter( profile, "glsl.manager", NULL );
 		if ( glsl_manager ) {
 			mlt_events_listen( this->properties, &hiddenctx, "consumer-thread-started", (mlt_listener) on_consumer_thread_started );
-			mlt_events_fire( MLT_FILTER_PROPERTIES(glsl_manager), "init glsl", NULL );
 		} else {
 			mlt_consumer_close( parent );
 			parent = NULL;

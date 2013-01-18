@@ -34,6 +34,8 @@ public:
 	QGlslConsumer(mlt_profile profile)
 		: QThread(0)
 		, Mlt::Consumer(mlt_consumer_new(profile))
+		, isStopped(true)
+		, glslManager(0)
 		, app(qApp)
 		, renderContext(0)
 	{
@@ -46,7 +48,6 @@ public:
 			set("mlt_image_format", "rgb24");
 			set("terminate_on_pause", 1);
 			set("real_time", -1);
-			glslManager->fire_event("init glsl");
 		} else {
 			mlt_consumer_close(get_consumer());
 		}
@@ -77,7 +78,13 @@ public:
 		renderContext->resize(0, 0);
 		renderContext->show();
 		app->processEvents();
-		glslManager->fire_event("start glsl");
+		glslManager->fire_event("test glsl");
+		if (glslManager->get_int("glsl_supported")) {
+			mlt_log_fatal( get_service(),
+				"OpenGL Shading Language rendering is not supported on this machine.\n" );
+			this->fire_event("consumer-fatal-error");
+			isStopped = true;
+		}
 	}
 
 protected:
@@ -87,7 +94,8 @@ protected:
 		bool terminated = false;
 		mlt_frame frame = NULL;
 
-		while (!terminated && isRunning()) {
+		isStopped = false;
+		while (!terminated && !isStopped) {
 			if ((frame = mlt_consumer_rt_frame(get_consumer()))) {
 				terminated = terminate_on_pause &&
 					mlt_properties_get_double(MLT_FRAME_PROPERTIES(frame), "_speed") == 0.0;
@@ -123,7 +131,8 @@ static int is_stopped(mlt_consumer consumer)
 static int stop(mlt_consumer consumer)
 {
 	QGlslConsumer* qglsl = (QGlslConsumer*) consumer->child;
-	qglsl->quit();
+	qglsl->isStopped = true;
+	qglsl->wait();
 	return 0;
 }
 

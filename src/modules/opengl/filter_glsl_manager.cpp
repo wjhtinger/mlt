@@ -24,12 +24,6 @@
 #include "movit/effect_chain.h"
 #include "mlt_movit_input.h"
 
-extern "C"
-{
-int mlt_glsl_supported();
-glsl_env mlt_glsl_init( mlt_profile profile );
-void mlt_glsl_start( glsl_env g );
-}
 
 class GlslManager : public Mlt::Filter
 {
@@ -44,11 +38,7 @@ public:
 			filter->child = this;
 
 			mlt_events_register( get_properties(), "test glsl", NULL );
-			mlt_events_register( get_properties(), "init glsl", NULL );
-			mlt_events_register( get_properties(), "start glsl", NULL );
 			listen( "test glsl", this, (mlt_listener) onTest );
-			listen( "init glsl", this, (mlt_listener) onInit );
-			listen( "start glsl", this, (mlt_listener) onStart );
 		}
 	}
 
@@ -58,21 +48,7 @@ private:
 		mlt_log_verbose( filter->get_service(), "%s: %d\n", __FUNCTION__, syscall(SYS_gettid) );
 		init_movit( std::string(mlt_environment( "MLT_DATA" )).append("/opengl/movit"),
 			mlt_log_get_level() == MLT_LOG_DEBUG? MOVIT_DEBUG_ON : MOVIT_DEBUG_OFF );
-		filter->set( "glsl_supported", movit_initialized && mlt_glsl_supported() );
-	}
-
-	static void onInit( mlt_properties owner, GlslManager* filter )
-	{
-		mlt_log_verbose( filter->get_service(), "%s: %d\n", __FUNCTION__, syscall(SYS_gettid) );
-		mlt_glsl_init( filter->get_profile() );
-	}
-
-	static void onStart( mlt_properties owner, GlslManager* filter )
-	{
-		mlt_log_verbose( filter->get_service(), "%s: %d\n", __FUNCTION__, syscall(SYS_gettid) );
-		init_movit( std::string(mlt_environment( "MLT_DATA" )).append("/opengl/movit"),
-			mlt_log_get_level() == MLT_LOG_DEBUG? MOVIT_DEBUG_ON : MOVIT_DEBUG_OFF );
-		mlt_glsl_start( mlt_glsl_get( filter->get_profile() ) );
+		filter->set( "glsl_supported", movit_initialized );
 	}
 };
 
@@ -93,9 +69,12 @@ public:
 
 extern "C" {
 
+glsl_env mlt_glsl_init( mlt_profile profile );
+
 mlt_filter filter_glsl_manager_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg )
 {
 	GlslManager* g = new GlslManager();
+	mlt_glsl_init( profile );
 	return g->get_filter();
 }
 
