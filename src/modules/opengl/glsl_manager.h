@@ -21,15 +21,74 @@
 #define GLSL_MANAGER_H
 
 #include <GL/glew.h>
-#include <framework/mlt_producer.h>
-#include <framework/mlt_filter.h>
-#include <framework/mlt_frame.h>
+#include <mlt++/MltFilter.h>
+#include <mlt++/MltDeque.h>
+
+#define MAXLISTCOUNT 1024
+typedef struct glsl_list_s *glsl_list;
+struct glsl_list_s
+{
+	void *items[MAXLISTCOUNT];
+	int count;
+
+	int ( *add )( glsl_list, void* );
+	void* ( *at )( glsl_list, int );
+	void* ( *take_at )( glsl_list, int );
+	void* ( *take )( glsl_list, void* );
+};
+
+struct glsl_texture_s
+{
+	int used;
+	GLuint texture;
+	int width;
+	int height;
+	GLint internal_format;
+};
+typedef struct glsl_texture_s *glsl_texture;
+
+struct glsl_fbo_s
+{
+	int used;
+	int width;
+	int height;
+	GLuint fbo;
+};
+typedef struct glsl_fbo_s *glsl_fbo;
+
+struct glsl_pbo_s
+{
+	int size;
+	GLuint pbo;
+};
+typedef struct glsl_pbo_s *glsl_pbo;
 
 class Effect;
 
-int mlt_glsl_init_movit( mlt_producer producer );
-Effect* mlt_glsl_get_effect( mlt_filter filter, mlt_frame frame );
-Effect* mlt_glsl_add_effect( mlt_filter filter, mlt_frame frame, Effect* a_effect );
-void mlt_glsl_render_fbo( mlt_producer producer, void *chain, GLuint fbo, int width, int height );
+class GlslManager : public Mlt::Filter
+{
+public:
+	GlslManager();
+	~GlslManager();
+	static GlslManager* get_instance();
+
+	glsl_fbo get_fbo(int width, int height);
+	static void release_fbo(glsl_fbo);
+	glsl_texture get_texture(int width, int height, GLint internal_format);
+	static void release_texture(glsl_texture);
+	glsl_pbo get_pbo(int size);
+
+	static bool init_movit(mlt_producer);
+	static Effect* get_effect(mlt_filter, mlt_frame);
+	static Effect* add_effect(mlt_filter, mlt_frame, Effect*);
+	static void render(mlt_producer, void *chain, GLuint fbo, int width, int height);
+
+private:
+	static void onTest( mlt_properties owner, GlslManager* filter );
+
+	Mlt::Deque fbo_list;
+	Mlt::Deque texture_list;
+	glsl_pbo  pbo;
+};
 
 #endif // GLSL_MANAGER_H

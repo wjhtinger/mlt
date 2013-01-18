@@ -21,7 +21,6 @@
 #include <string.h>
 #include <assert.h>
 
-#include "mlt_glsl.h"
 #include "glsl_manager.h"
 #include "movit/init.h"
 #include "movit/effect_chain.h"
@@ -114,7 +113,7 @@ static int get_image( mlt_frame frame, uint8_t **image, mlt_image_format *format
 	error = mlt_frame_get_image( frame, image, format, &owidth, &oheight, writable );
 
 	if ( !error ) {
-		Effect* effect = mlt_glsl_get_effect( filter, frame );
+		Effect* effect = GlslManager::get_effect( filter, frame );
 		if ( effect ) {
 			bool ok = effect->set_int( "width", *width );
 			ok |= effect->set_int( "height", *height );
@@ -129,7 +128,7 @@ static int get_image( mlt_frame frame, uint8_t **image, mlt_image_format *format
 
 static mlt_frame process( mlt_filter filter, mlt_frame frame )
 {
-	mlt_glsl_add_effect( filter, frame, new PaddingEffect() );
+	GlslManager::add_effect( filter, frame, new PaddingEffect() );
 	mlt_deque_push_back_double( MLT_FRAME_IMAGE_STACK( frame ), mlt_frame_get_aspect_ratio( frame ) );
 	mlt_frame_push_service( frame, filter );
 	mlt_frame_push_get_image( frame, get_image );
@@ -141,7 +140,7 @@ extern "C" {
 mlt_filter filter_movit_resize_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg )
 {
 	mlt_filter filter = NULL;
-	glsl_env glsl = mlt_glsl_get( profile );
+	GlslManager* glsl = GlslManager::get_instance();
 
 	if ( glsl && ( filter = mlt_filter_new() ) )
 	{

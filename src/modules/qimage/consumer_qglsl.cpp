@@ -79,7 +79,7 @@ public:
 		renderContext->show();
 		app->processEvents();
 		glslManager->fire_event("test glsl");
-		if (glslManager->get_int("glsl_supported")) {
+		if (!glslManager->get_int("glsl_supported")) {
 			mlt_log_fatal( get_service(),
 				"OpenGL Shading Language rendering is not supported on this machine.\n" );
 			this->fire_event("consumer-fatal-error");

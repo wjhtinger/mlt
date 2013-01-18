@@ -6,7 +6,7 @@ include ../../../config.mak
 
 TARGET = ../libmltopengl$(LIBSUF)
 
-OBJS = factory.o mlt_glsl.o
+OBJS = factory.o
 
 CPPOBJS = filter_glsl_manager.o
 

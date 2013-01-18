@@ -21,7 +21,6 @@
 #include <string.h>
 #include <assert.h>
 
-#include "mlt_glsl.h"
 #include "glsl_manager.h"
 #include "movit/effect_chain.h"
 #include "mlt_movit_input.h"
@@ -74,7 +73,7 @@ static int convert_image( mlt_frame frame, uint8_t **image, mlt_image_format *fo
 		return convert_on_cpu( frame, image, format, output_format );
 
 	mlt_producer producer = mlt_producer_cut_parent( mlt_frame_get_original_producer( frame ) );
-	glsl_env glsl = mlt_glsl_get( mlt_service_profile( MLT_PRODUCER_SERVICE( producer ) ) );
+	GlslManager* glsl = GlslManager::get_instance();
 	if ( !glsl )
 		return 1;
 
@@ -159,10 +158,10 @@ static int convert_image( mlt_frame frame, uint8_t **image, mlt_image_format *fo
 	}
 
 	if ( output_format != mlt_image_glsl ) {
-		glsl_fbo fbo = glsl->get_fbo( glsl, width, height );
+		glsl_fbo fbo = glsl->get_fbo( width, height );
 
 		if ( output_format == mlt_image_glsl_texture ) {
-			glsl_texture texture = glsl->get_texture( glsl, width, height, GL_RGBA );
+			glsl_texture texture = glsl->get_texture( width, height, GL_RGBA );
 
 			glBindFramebuffer( GL_FRAMEBUFFER, fbo->fbo );
 			check_error();
@@ -174,7 +173,7 @@ static int convert_image( mlt_frame frame, uint8_t **image, mlt_image_format *fo
 			// Using a temporary chain to convert image in RAM to OpenGL texture.
 			if ( *format != mlt_image_glsl )
 				mlt_properties_set_int( producer_props, "_movit finalized", 0 );
-			mlt_glsl_render_fbo( producer, chain, fbo->fbo, width, height );
+			GlslManager::render( producer, chain, fbo->fbo, width, height );
 
 			glFinish();
 			check_error();
@@ -187,7 +186,7 @@ static int convert_image( mlt_frame frame, uint8_t **image, mlt_image_format *fo
 			*image = (uint8_t*) &texture->texture;
 			mlt_frame_set_image( frame, *image, 0, NULL );
 			mlt_properties_set_data( properties, "movit.convert", texture, 0,
-				(mlt_destructor) mlt_glsl_close_texture, NULL );
+				(mlt_destructor) GlslManager::release_texture, NULL );
 			mlt_properties_set_int( properties, "format", output_format );
 			*format = output_format;
 		}
@@ -197,8 +196,8 @@ static int convert_image( mlt_frame frame, uint8_t **image, mlt_image_format *fo
 			GLenum gl_format = ( output_format == mlt_image_rgb24a || output_format == mlt_image_opengl )?
 				GL_RGBA : GL_RGB;
 			img_size = width * height * ( gl_format == GL_RGB? 3 : 4 );
-			glsl_pbo pbo = glsl->get_pbo( glsl, img_size );
-			glsl_texture texture = glsl->get_texture( glsl, width, height, gl_format );
+			glsl_pbo pbo = glsl->get_pbo( img_size );
+			glsl_texture texture = glsl->get_texture( width, height, gl_format );
 
 			if ( fbo && pbo && texture ) {
 				// Set the FBO
@@ -209,7 +208,7 @@ static int convert_image( mlt_frame frame, uint8_t **image, mlt_image_format *fo
 				glBindFramebuffer( GL_FRAMEBUFFER, 0 );
 				check_error();
 
-				mlt_glsl_render_fbo( producer, chain, fbo->fbo, width, height );
+				GlslManager::render( producer, chain, fbo->fbo, width, height );
 	
 				// Read FBO into PBO
 				glBindBuffer( GL_PIXEL_PACK_BUFFER_ARB, pbo->pbo );
@@ -243,7 +242,7 @@ static int convert_image( mlt_frame frame, uint8_t **image, mlt_image_format *fo
 				check_error();
 				glBindTexture( GL_TEXTURE_RECTANGLE_ARB, 0 );
 				check_error();
-				glsl->release_texture( texture );
+				GlslManager::release_texture( texture );
 	
 				mlt_properties_set_int( properties, "format", output_format );
 				*format = output_format;
@@ -252,7 +251,7 @@ static int convert_image( mlt_frame frame, uint8_t **image, mlt_image_format *fo
 				error = 1;
 			}
 		}
-		if ( fbo ) glsl->release_fbo( fbo );
+		if ( fbo ) GlslManager::release_fbo( fbo );
 	}
 	else {
 		mlt_properties_set_int( properties, "format", output_format );
@@ -305,7 +304,7 @@ extern "C" {
 mlt_filter filter_movit_convert_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg )
 {
 	mlt_filter filter = NULL;
-	glsl_env glsl = mlt_glsl_get( profile );
+	GlslManager* glsl = GlslManager::get_instance();
 
 	if ( glsl && ( filter = mlt_filter_new() ) )
 	{

@@ -21,14 +21,13 @@
 #include <string.h>
 #include <assert.h>
 
-#include "mlt_glsl.h"
 #include "glsl_manager.h"
 #include "movit/init.h"
 #include "movit/blur_effect.h"
 
 static mlt_frame process( mlt_filter filter, mlt_frame frame )
 {
-	Effect* effect = mlt_glsl_add_effect( filter, frame, new BlurEffect() );
+	Effect* effect = GlslManager::add_effect( filter, frame, new BlurEffect() );
 	if ( effect ) {
 		mlt_properties filter_props = MLT_FILTER_PROPERTIES( filter );
 		bool ok = effect->set_float( "radius", mlt_properties_get_double( filter_props, "radius" ) );
@@ -42,7 +41,7 @@ extern "C" {
 mlt_filter filter_movit_blur_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg )
 {
 	mlt_filter filter = NULL;
-	glsl_env glsl = mlt_glsl_get( profile );
+	GlslManager* glsl = GlslManager::get_instance();
 
 	if ( glsl && ( filter = mlt_filter_new() ) ) {
 		mlt_properties properties = MLT_FILTER_PROPERTIES( filter );

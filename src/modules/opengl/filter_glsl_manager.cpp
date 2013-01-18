@@ -1,56 +1,179 @@
 /*
  * filter_glsl_manager.cpp
+ * Copyright (C) 2011 Christophe Thommeret <hftom@free.fr>
  * Copyright (C) 2012 Dan Dennedy <dan@dennedy.org>
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
  *
- * This library is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software Foundation,
+ * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
 #include <string>
-#include <mlt++/MltFilter.h>
-#include "mlt_glsl.h"
+#include "glsl_manager.h"
 #include "movit/init.h"
 #include "movit/effect_chain.h"
 #include "mlt_movit_input.h"
 
+extern "C" {
+#include <framework/mlt_factory.h>
+}
 
-class GlslManager : public Mlt::Filter
+#ifdef WIN32
+#define SYS_gettid (224)
+#define syscall(X) (((X == SYS_gettid) && GetCurrentThreadId()) || 0)
+#else
+#include <sys/syscall.h>
+#endif
+
+GlslManager::GlslManager()
+	: Mlt::Filter( mlt_filter_new() )
+	, pbo(0)
 {
-public:
-	GlslManager() : Mlt::Filter( mlt_filter_new() )
-	{
-		mlt_filter filter = get_filter();
-		if ( filter ) {
-			// Mlt::Filter() adds a reference that we do not need.
-			mlt_filter_close( filter );
-			// Set the mlt_filter child in case we choose to override virtual functions.
-			filter->child = this;
+	mlt_filter filter = get_filter();
+	if ( filter ) {
+		// Mlt::Filter() adds a reference that we do not need.
+		mlt_filter_close( filter );
+		// Set the mlt_filter child in case we choose to override virtual functions.
+		filter->child = this;
+		mlt_properties_set_data(mlt_global_properties(), "glslManager", this, 0, NULL, NULL);
 
-			mlt_events_register( get_properties(), "test glsl", NULL );
-			listen( "test glsl", this, (mlt_listener) onTest );
+		mlt_events_register( get_properties(), "test glsl", NULL );
+		listen( "test glsl", this, (mlt_listener) GlslManager::onTest );
+	}
+}
+
+GlslManager::~GlslManager()
+{
+	while (fbo_list.peek_back())
+		delete (glsl_fbo) fbo_list.pop_back();
+	while (texture_list.peek_back())
+		delete (glsl_texture) texture_list.pop_back();
+	delete pbo;
+}
+
+GlslManager* GlslManager::get_instance()
+{
+	return (GlslManager*) mlt_properties_get_data(mlt_global_properties(), "glslManager", 0);
+}
+
+glsl_fbo GlslManager::get_fbo(int width, int height)
+{
+	for (int i = 0; i < fbo_list.count(); ++i) {
+		glsl_fbo fbo = (glsl_fbo) fbo_list.peek(i);
+		if (!fbo->used && (fbo->width == width) && (fbo->height == height)) {
+			fbo->used = 1;
+			return fbo;
 		}
 	}
+	GLuint fb = 0;
+	glGenFramebuffers(1, &fb);
+	if (!fb)
+		return NULL;
 
-private:
-	static void onTest( mlt_properties owner, GlslManager* filter )
-	{
-		mlt_log_verbose( filter->get_service(), "%s: %d\n", __FUNCTION__, syscall(SYS_gettid) );
-		init_movit( std::string(mlt_environment( "MLT_DATA" )).append("/opengl/movit"),
-			mlt_log_get_level() == MLT_LOG_DEBUG? MOVIT_DEBUG_ON : MOVIT_DEBUG_OFF );
-		filter->set( "glsl_supported", movit_initialized );
+	glsl_fbo fbo = new glsl_fbo_s;
+	if (!fbo) {
+		glDeleteFramebuffers(1, &fb);
+		return NULL;
 	}
-};
+	fbo->fbo = fb;
+	fbo->width = width;
+	fbo->height = height;
+	fbo->used = 1;
+	fbo_list.push_back(fbo);
+	return fbo;
+}
+
+void GlslManager::release_fbo(glsl_fbo fbo)
+{
+	fbo->used = 0;
+}
+
+glsl_texture GlslManager::get_texture(int width, int height, GLint internal_format)
+{
+	for (int i = 0; i < texture_list.count(); ++i) {
+		glsl_texture tex = (glsl_texture) texture_list.peek(i);
+		if (!tex->used && (tex->width == width) && (tex->height == height) && (tex->internal_format == internal_format)) {
+			glBindTexture(GL_TEXTURE_RECTANGLE_ARB, tex->texture);
+			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			glBindTexture( GL_TEXTURE_RECTANGLE_ARB, 0);
+			tex->used = 1;
+			return tex;
+		}
+	}
+	GLuint tex = 0;
+	glGenTextures(1, &tex);
+	if (!tex)
+		return NULL;
+
+	glsl_texture gtex = new glsl_texture_s;
+	if (!gtex) {
+		glDeleteTextures(1, &tex);
+		return NULL;
+	}
+	glBindTexture( GL_TEXTURE_RECTANGLE_ARB, tex );
+	glTexImage2D( GL_TEXTURE_RECTANGLE_ARB, 0, internal_format, width, height, 0, internal_format, GL_UNSIGNED_BYTE, NULL );
+    glTexParameterf( GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+    glTexParameterf( GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+    glTexParameteri( GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+    glTexParameteri( GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+    glBindTexture( GL_TEXTURE_RECTANGLE_ARB, 0 );
+
+	gtex->texture = tex;
+	gtex->width = width;
+	gtex->height = height;
+	gtex->internal_format = internal_format;
+	gtex->used = 1;
+	texture_list.push_back(gtex);
+	return gtex;
+}
+
+void GlslManager::release_texture(glsl_texture texture)
+{
+	texture->used = 0;
+}
+
+glsl_pbo GlslManager::get_pbo(int size)
+{
+	if (!pbo) {
+		GLuint pb = 0;
+		glGenBuffers(1, &pb);
+		if (!pb)
+			return NULL;
+
+		pbo = new glsl_pbo_s;
+		if (!pbo) {
+			glDeleteBuffers(1, &pb);
+			return NULL;
+		}
+		pbo->pbo = pb;
+	}
+	if (size > pbo->size) {
+		glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, pbo->pbo);
+		glBufferData(GL_PIXEL_UNPACK_BUFFER_ARB, size, NULL, GL_STREAM_DRAW);
+		glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
+		pbo->size = size;
+	}
+	return pbo;
+}
+
+void GlslManager::onTest( mlt_properties owner, GlslManager* filter )
+{
+	mlt_log_verbose( filter->get_service(), "%s: %d\n", __FUNCTION__, syscall(SYS_gettid) );
+	::init_movit( std::string(mlt_environment( "MLT_DATA" )).append("/opengl/movit"),
+		mlt_log_get_level() == MLT_LOG_DEBUG? MOVIT_DEBUG_ON : MOVIT_DEBUG_OFF );
+	filter->set( "glsl_supported", movit_initialized );
+}
 
 namespace Mlt
 {
@@ -69,12 +192,9 @@ public:
 
 extern "C" {
 
-glsl_env mlt_glsl_init( mlt_profile profile );
-
 mlt_filter filter_glsl_manager_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg )
 {
 	GlslManager* g = new GlslManager();
-	mlt_glsl_init( profile );
 	return g->get_filter();
 }
 
@@ -85,9 +205,9 @@ static void deleteChain( EffectChain* chain )
 	delete chain;
 }
 
-int mlt_glsl_init_movit( mlt_producer producer )
+bool GlslManager::init_movit( mlt_producer producer )
 {
-	int error = 1;
+	bool error = true;
 	mlt_properties properties = MLT_PRODUCER_PROPERTIES( producer );
 	EffectChain* chain = (EffectChain*) mlt_properties_get_data( properties, "movit chain", NULL );
 	if ( !chain ) {
@@ -98,12 +218,12 @@ int mlt_glsl_init_movit( mlt_producer producer )
 		mlt_properties_set_data( properties, "movit chain", chain, 0, (mlt_destructor) deleteChain, NULL );
 		mlt_properties_set_data( properties, "movit input", input, 0, NULL, NULL );
 		mlt_properties_set_int( properties, "_movit finalized", 0 );
-		error = 0;
+		error = false;
 	}
 	return error;
 }
 
-Effect* mlt_glsl_get_effect( mlt_filter filter, mlt_frame frame )
+Effect* GlslManager::get_effect( mlt_filter filter, mlt_frame frame )
 {
 	mlt_producer producer = mlt_producer_cut_parent( mlt_frame_get_original_producer( frame ) );
 	mlt_properties properties = MLT_PRODUCER_PROPERTIES( producer );
@@ -111,9 +231,9 @@ Effect* mlt_glsl_get_effect( mlt_filter filter, mlt_frame frame )
 	return (Effect*) mlt_properties_get_data( properties, unique_id, NULL );
 }
 
-Effect* mlt_glsl_add_effect( mlt_filter filter, mlt_frame frame, Effect* effect )
+Effect* GlslManager::add_effect( mlt_filter filter, mlt_frame frame, Effect* effect )
 {
-	if ( !mlt_glsl_get_effect( filter, frame ) ) {
+	if ( !get_effect( filter, frame ) ) {
 		mlt_producer producer = mlt_producer_cut_parent( mlt_frame_get_original_producer( frame ) );
 		mlt_properties properties = MLT_PRODUCER_PROPERTIES( producer );
 		char *unique_id = mlt_properties_get( MLT_FILTER_PROPERTIES(filter), "_unique_id" );
@@ -124,7 +244,7 @@ Effect* mlt_glsl_add_effect( mlt_filter filter, mlt_frame frame, Effect* effect 
 	return effect;
 }
 
-void mlt_glsl_render_fbo( mlt_producer producer, void* chain, GLuint fbo, int width, int height )
+void GlslManager::render( mlt_producer producer, void* chain, GLuint fbo, int width, int height )
 {
 	EffectChain* effect_chain = (EffectChain*) chain;
 	mlt_properties properties = MLT_PRODUCER_PROPERTIES( producer );
