@@ -81,9 +81,8 @@ static int convert_image( mlt_frame frame, uint8_t **image, mlt_image_format *fo
 	int width = mlt_properties_get_int( properties, "width" );
 	int height = mlt_properties_get_int( properties, "height" );
 	int img_size = mlt_image_format_size( *format, width, height, NULL );
-	mlt_properties producer_props = MLT_PRODUCER_PROPERTIES( producer );
-	EffectChain* chain = (EffectChain*) mlt_properties_get_data( producer_props, "movit chain", NULL );
-	MltInput* input = (MltInput*) mlt_properties_get_data( producer_props, "movit input", NULL );
+	EffectChain* chain = GlslManager::get_chain( producer );
+	MltInput* input = GlslManager::get_input( producer );
 
 	// Use a temporary chain to convert image in RAM to OpenGL texture.
 	if ( output_format == mlt_image_glsl_texture && *format != mlt_image_glsl ) {
@@ -172,7 +171,7 @@ static int convert_image( mlt_frame frame, uint8_t **image, mlt_image_format *fo
 
 			// Using a temporary chain to convert image in RAM to OpenGL texture.
 			if ( *format != mlt_image_glsl )
-				mlt_properties_set_int( producer_props, "_movit finalized", 0 );
+				GlslManager::reset_finalized( producer );
 			GlslManager::render( producer, chain, fbo->fbo, width, height );
 
 			glFinish();

@@ -223,6 +223,21 @@ bool GlslManager::init_movit( mlt_producer producer )
 	return error;
 }
 
+EffectChain* GlslManager::get_chain( mlt_producer producer )
+{
+	return (EffectChain*) mlt_properties_get_data( MLT_PRODUCER_PROPERTIES(producer), "movit chain", NULL );
+}
+
+MltInput *GlslManager::get_input( mlt_producer producer )
+{
+	return (MltInput*) mlt_properties_get_data( MLT_PRODUCER_PROPERTIES(producer), "movit input", NULL );
+}
+
+void GlslManager::reset_finalized( mlt_producer producer )
+{
+	mlt_properties_set_int( MLT_PRODUCER_PROPERTIES(producer), "_movit finalized", 0 );
+}
+
 Effect* GlslManager::get_effect( mlt_filter filter, mlt_frame frame )
 {
 	mlt_producer producer = mlt_producer_cut_parent( mlt_frame_get_original_producer( frame ) );

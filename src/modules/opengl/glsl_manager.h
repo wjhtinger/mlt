@@ -64,6 +64,8 @@ struct glsl_pbo_s
 typedef struct glsl_pbo_s *glsl_pbo;
 
 class Effect;
+class EffectChain;
+class MltInput;
 
 class GlslManager : public Mlt::Filter
 {
@@ -79,6 +81,9 @@ public:
 	glsl_pbo get_pbo(int size);
 
 	static bool init_movit(mlt_producer);
+	static EffectChain* get_chain(mlt_producer);
+	static MltInput* get_input(mlt_producer);
+	static void reset_finalized(mlt_producer);
 	static Effect* get_effect(mlt_filter, mlt_frame);
 	static Effect* add_effect(mlt_filter, mlt_frame, Effect*);
 	static void render(mlt_producer, void *chain, GLuint fbo, int width, int height);
@@ -89,6 +94,7 @@ private:
 	Mlt::Deque fbo_list;
 	Mlt::Deque texture_list;
 	glsl_pbo  pbo;
+	EffectChain* current_chain;
 };
 
 #endif // GLSL_MANAGER_H
