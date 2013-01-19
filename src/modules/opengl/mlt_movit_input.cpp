@@ -1,5 +1,5 @@
 /*
- * mlt_movit_input.h
+ * mlt_movit_input.cpp
  * Copyright (C) 2013 Dan Dennedy <dan@dennedy.org>
  *
  * This program is free software; you can redistribute it and/or modify

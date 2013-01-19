@@ -41,8 +41,8 @@
 #include <framework/mlt.h>
 
 
-#define STARTWIDTH 640
-#define STARTHEIGHT 480
+#define STARTWIDTH 1280
+#define STARTHEIGHT 720
 
 
 extern int XInitThreads();

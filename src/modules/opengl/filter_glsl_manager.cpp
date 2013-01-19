@@ -1,7 +1,7 @@
 /*
  * filter_glsl_manager.cpp
- * Copyright (C) 2011 Christophe Thommeret <hftom@free.fr>
- * Copyright (C) 2012 Dan Dennedy <dan@dennedy.org>
+ * Copyright (C) 2011-2012 Christophe Thommeret <hftom@free.fr>
+ * Copyright (C) 2013 Dan Dennedy <dan@dennedy.org>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
