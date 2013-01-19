@@ -54,5 +54,7 @@ MLT_REPOSITORY
 	MLT_REGISTER( filter_type, "movit.resize", filter_movit_resize_init );
 	MLT_REGISTER( filter_type, "movit.sharpen", filter_deconvolution_sharpen_init );
 
+	MLT_REGISTER_METADATA( filter_type, "movit.blur", metadata, "filter_movit_blur.yml" );
+	MLT_REGISTER_METADATA( filter_type, "movit.mirror", metadata, "filter_movit_mirror.yml" );
 	MLT_REGISTER_METADATA( filter_type, "movit.sharpen", metadata, "filter_deconvolution_sharpen.yml" );
 }
