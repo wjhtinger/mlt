@@ -28,6 +28,7 @@ extern mlt_filter filter_glsl_manager_init( mlt_profile profile, mlt_service_typ
 extern mlt_filter filter_movit_blur_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
 extern mlt_filter filter_movit_convert_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
 extern mlt_filter filter_deconvolution_sharpen_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
+extern mlt_filter filter_movit_diffusion_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
 extern mlt_filter filter_movit_mirror_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
 extern mlt_filter filter_movit_resample_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
 extern mlt_filter filter_movit_resize_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
@@ -49,12 +50,14 @@ MLT_REPOSITORY
 	MLT_REGISTER( filter_type, "glsl.manager", filter_glsl_manager_init );
 	MLT_REGISTER( filter_type, "movit.blur", filter_movit_blur_init );
 	MLT_REGISTER( filter_type, "movit.convert", filter_movit_convert_init );
+	MLT_REGISTER( filter_type, "movit.diffusion", filter_movit_diffusion_init );
 	MLT_REGISTER( filter_type, "movit.mirror", filter_movit_mirror_init );
 	MLT_REGISTER( filter_type, "movit.resample", filter_movit_resample_init );
 	MLT_REGISTER( filter_type, "movit.resize", filter_movit_resize_init );
 	MLT_REGISTER( filter_type, "movit.sharpen", filter_deconvolution_sharpen_init );
 
 	MLT_REGISTER_METADATA( filter_type, "movit.blur", metadata, "filter_movit_blur.yml" );
+	MLT_REGISTER_METADATA( filter_type, "movit.diffusion", metadata, "filter_movit_diffusion.yml" );
 	MLT_REGISTER_METADATA( filter_type, "movit.mirror", metadata, "filter_movit_mirror.yml" );
 	MLT_REGISTER_METADATA( filter_type, "movit.sharpen", metadata, "filter_deconvolution_sharpen.yml" );
 }
