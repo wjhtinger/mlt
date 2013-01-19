@@ -1,7 +1,6 @@
 /*
+ * Copyright (C) 2013 Dan Dennedy <dan@dennedy.org>
  * factory.c -- the factory method interfaces
- * Copyright (C) 2006 Visual Media
- * Author: Charles Yates <charles.yates@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,6 +27,7 @@ extern mlt_consumer consumer_xgl_init( mlt_profile profile, mlt_service_type typ
 extern mlt_filter filter_glsl_manager_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
 extern mlt_filter filter_movit_blur_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
 extern mlt_filter filter_movit_convert_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
+extern mlt_filter filter_deconvolution_sharpen_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
 extern mlt_filter filter_movit_mirror_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
 extern mlt_filter filter_movit_resample_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
 extern mlt_filter filter_movit_resize_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
@@ -52,4 +52,7 @@ MLT_REPOSITORY
 	MLT_REGISTER( filter_type, "movit.mirror", filter_movit_mirror_init );
 	MLT_REGISTER( filter_type, "movit.resample", filter_movit_resample_init );
 	MLT_REGISTER( filter_type, "movit.resize", filter_movit_resize_init );
+	MLT_REGISTER( filter_type, "movit.sharpen", filter_deconvolution_sharpen_init );
+
+	MLT_REGISTER_METADATA( filter_type, "movit.sharpen", metadata, "filter_deconvolution_sharpen.yml" );
 }
