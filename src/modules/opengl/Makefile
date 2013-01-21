@@ -87,7 +87,8 @@ install: all
 	install -m 755 $(TARGET) "$(DESTDIR)$(libdir)/mlt"
 	install -d "$(DESTDIR)$(datadir)/mlt/opengl/movit"
 	install -m 644 *.yml "$(DESTDIR)$(datadir)/mlt/opengl"
-	install -m 644 movit/*.{frag,vert} "$(DESTDIR)$(datadir)/mlt/opengl/movit"
+	install -m 644 movit/*.frag "$(DESTDIR)$(datadir)/mlt/opengl/movit"
+	install -m 644 movit/*.vert "$(DESTDIR)$(datadir)/mlt/opengl/movit"
 
 ifneq ($(wildcard .depend),)
 include .depend
