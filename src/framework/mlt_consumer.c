@@ -490,7 +490,7 @@ int mlt_consumer_start( mlt_consumer self )
 		else if ( !strcmp( format, "none" ) )
 			self->format = mlt_image_none;
 		else if ( !strcmp( format, "glsl" ) )
-			self->format = mlt_image_glsl;
+			self->format = mlt_image_glsl_texture;
 		else
 			self->format = mlt_image_yuv422;
 	}
