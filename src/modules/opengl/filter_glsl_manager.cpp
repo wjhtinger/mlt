@@ -32,6 +32,7 @@ extern "C" {
 #define SYS_gettid (224)
 #define syscall(X) (((X == SYS_gettid) && GetCurrentThreadId()) || 0)
 #else
+#include <unistd.h>
 #include <sys/syscall.h>
 #endif
 
