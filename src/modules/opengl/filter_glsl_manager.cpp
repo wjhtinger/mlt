@@ -206,7 +206,7 @@ static void deleteChain( EffectChain* chain )
 	delete chain;
 }
 
-bool GlslManager::init_movit( mlt_producer producer )
+bool GlslManager::init_chain( mlt_producer producer )
 {
 	bool error = true;
 	mlt_properties properties = MLT_PRODUCER_PROPERTIES( producer );

@@ -80,7 +80,7 @@ public:
 	static void release_texture(glsl_texture);
 	glsl_pbo get_pbo(int size);
 
-	static bool init_movit(mlt_producer);
+	static bool init_chain(mlt_producer);
 	static EffectChain* get_chain(mlt_producer);
 	static MltInput* get_input(mlt_producer);
 	static void reset_finalized(mlt_producer);

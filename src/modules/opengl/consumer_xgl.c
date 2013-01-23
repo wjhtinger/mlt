@@ -119,7 +119,6 @@ static HiddenContext hiddenctx;
 
 static frame_new new_frame;
 static fbo fb;
-static int mlt_has_glsl;
 static thread_video vthread;
 static consumer_xgl xgl;
 static mlt_filter glsl_manager;
@@ -179,7 +178,7 @@ static void update()
 	
 	glXSwapBuffers( GLWin.dpy, GLWin.win );
 	
-	if ( !vthread.running && mlt_has_glsl ) {
+	if ( !vthread.running ) {
 		pthread_create( &vthread.thread, NULL, video_thread, NULL );
 		vthread.running = 1;
 	}
@@ -264,6 +263,12 @@ void* video_thread( void *arg )
 	{
 		// Get a frame from the attached producer
 		next = mlt_consumer_rt_frame( consumer );
+
+		if ( !mlt_properties_get_int( MLT_FILTER_PROPERTIES( glsl_manager ), "glsl_supported" ) ) {
+			fprintf( stderr, "OpenGL Shading Language is not supported on this machine.\n" );
+			xgl->running = 0;
+			break;
+		}
 
 		// Ensure that we have a frame
 		if ( next )
@@ -422,23 +427,12 @@ static void createGLWindow()
 	fprintf(stderr, "Direct Rendering: %s\n",glXIsDirect( GLWin.dpy, GLWin.ctx ) ? "true" : "false" );
 	
 	// Verify GLSL works on this machine
-	mlt_has_glsl = 0;
-	mlt_properties filter_props = MLT_FILTER_PROPERTIES( glsl_manager );
 	hiddenctx.ctx = glXCreateContext( GLWin.dpy, vi, GLWin.ctx, GL_TRUE );
 	if ( hiddenctx.ctx ) {
-		mlt_events_fire( MLT_FILTER_PROPERTIES(glsl_manager), "init glsl", NULL );
-		if ( mlt_properties_get_int( filter_props, "glsl_supported" ) ) {
-			hiddenctx.dpy = GLWin.dpy;
-			hiddenctx.screen = GLWin.screen;
-			hiddenctx.win = RootWindow( hiddenctx.dpy, hiddenctx.screen );
-			mlt_has_glsl = 1;
-		}
+		hiddenctx.dpy = GLWin.dpy;
+		hiddenctx.screen = GLWin.screen;
+		hiddenctx.win = RootWindow( hiddenctx.dpy, hiddenctx.screen );
 	}
-	
-	if ( mlt_has_glsl )
-		fprintf(stderr, "Shared context created.\n");
-	else
-		fprintf(stderr, "No shared context :-(\n");
 
 	initGL();
 }
@@ -546,6 +540,7 @@ static void on_consumer_thread_started( mlt_properties owner, HiddenContext* con
 	fprintf(stderr, "%s: %ld\n", __FUNCTION__, syscall(SYS_gettid));
 	// Initialize this thread's OpenGL state
 	glXMakeCurrent( context->dpy, context->win, context->ctx );
+	mlt_events_fire( MLT_FILTER_PROPERTIES(glsl_manager), "init glsl", NULL );
 }
 
 /** Forward references to static functions.
