@@ -48,6 +48,7 @@ public:
 			set("mlt_image_format", "rgb24");
 			set("terminate_on_pause", 1);
 			set("real_time", -1);
+			set("buffer", 1);
 		} else {
 			mlt_consumer_close(get_consumer());
 		}
@@ -78,7 +79,7 @@ public:
 		renderContext->resize(0, 0);
 		renderContext->show();
 		app->processEvents();
-		glslManager->fire_event("test glsl");
+		glslManager->fire_event("init glsl");
 		if (!glslManager->get_int("glsl_supported")) {
 			mlt_log_fatal( get_service(),
 				"OpenGL Shading Language rendering is not supported on this machine.\n" );

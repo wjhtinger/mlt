@@ -47,8 +47,8 @@ GlslManager::GlslManager()
 		filter->child = this;
 		mlt_properties_set_data(mlt_global_properties(), "glslManager", this, 0, NULL, NULL);
 
-		mlt_events_register( get_properties(), "test glsl", NULL );
-		listen( "test glsl", this, (mlt_listener) GlslManager::onTest );
+		mlt_events_register( get_properties(), "init glsl", NULL );
+		listen("init glsl", this, (mlt_listener) GlslManager::onInit);
 	}
 }
 
@@ -167,7 +167,7 @@ glsl_pbo GlslManager::get_pbo(int size)
 	return pbo;
 }
 
-void GlslManager::onTest( mlt_properties owner, GlslManager* filter )
+void GlslManager::onInit( mlt_properties owner, GlslManager* filter )
 {
 	mlt_log_verbose( filter->get_service(), "%s: %d\n", __FUNCTION__, syscall(SYS_gettid) );
 	::init_movit( std::string(mlt_environment( "MLT_DATA" )).append("/opengl/movit"),

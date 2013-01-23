@@ -89,7 +89,7 @@ public:
 	static void render(mlt_producer, void *chain, GLuint fbo, int width, int height);
 
 private:
-	static void onTest( mlt_properties owner, GlslManager* filter );
+	static void onInit( mlt_properties owner, GlslManager* filter );
 
 	Mlt::Deque fbo_list;
 	Mlt::Deque texture_list;

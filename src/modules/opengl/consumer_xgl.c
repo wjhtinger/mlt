@@ -424,10 +424,10 @@ static void createGLWindow()
 	// Verify GLSL works on this machine
 	mlt_has_glsl = 0;
 	mlt_properties filter_props = MLT_FILTER_PROPERTIES( glsl_manager );
-	mlt_events_fire( MLT_FILTER_PROPERTIES(glsl_manager), "test glsl", NULL );
-	if ( mlt_properties_get_int( filter_props, "glsl_supported" ) ) {
-		hiddenctx.ctx = glXCreateContext( GLWin.dpy, vi, GLWin.ctx, GL_TRUE );
-		if ( hiddenctx.ctx ) {
+	hiddenctx.ctx = glXCreateContext( GLWin.dpy, vi, GLWin.ctx, GL_TRUE );
+	if ( hiddenctx.ctx ) {
+		mlt_events_fire( MLT_FILTER_PROPERTIES(glsl_manager), "init glsl", NULL );
+		if ( mlt_properties_get_int( filter_props, "glsl_supported" ) ) {
 			hiddenctx.dpy = GLWin.dpy;
 			hiddenctx.screen = GLWin.screen;
 			hiddenctx.win = RootWindow( hiddenctx.dpy, hiddenctx.screen );
