@@ -102,7 +102,7 @@ public:
 template<class T>
 class RewritingEffect : public Effect {
 public:
-	RewritingEffect() : effect(new T()) {}
+	RewritingEffect() : effect(new T()), replaced_node(NULL) {}
 	virtual std::string effect_type_id() const { return "RewritingEffect[" + effect->effect_type_id() + "]"; }
 	std::string output_fragment_shader() { EXPECT_TRUE(false); return read_file("identity.frag"); }
 	virtual void rewrite_graph(EffectChain *graph, Node *self) {
@@ -149,7 +149,7 @@ TEST(EffectChainTest, RewritingWorksAndTexturesAreAskedForsRGB) {
 		1.0f, 0.9771f,
 		0.8983f, 0.0f,
 	};
-	float out_data[2];
+	float out_data[4];
 	EffectChainTester tester(NULL, 2, 2);
 	tester.add_input(data, FORMAT_GRAYSCALE, COLORSPACE_sRGB, GAMMA_sRGB);
 	RewritingEffect<InvertEffect> *effect = new RewritingEffect<InvertEffect>();
@@ -344,7 +344,7 @@ TEST(EffectChainTest, IdentityThroughAlphaConversions) {
 		0.0f, 0.2f, 0.2f, 0.3f,
 		0.1f, 0.0f, 1.0f, 1.0f,
 	};
-	float out_data[6];
+	float out_data[4 * size];
 	EffectChainTester tester(data, size, 1, FORMAT_RGBA_POSTMULTIPLIED_ALPHA, COLORSPACE_sRGB, GAMMA_LINEAR);
 	tester.get_chain()->add_effect(new IdentityEffect());
 	tester.run(out_data, GL_RGBA, COLORSPACE_sRGB, GAMMA_LINEAR);
@@ -400,7 +400,7 @@ private:
 // which outputs blank alpha.
 class RewritingToBlueInput : public Input {
 public:
-	RewritingToBlueInput() { register_int("needs_mipmaps", &needs_mipmaps); }
+	RewritingToBlueInput() : blue_node(NULL) { register_int("needs_mipmaps", &needs_mipmaps); }
 	virtual std::string effect_type_id() const { return "RewritingToBlueInput"; }
 	std::string output_fragment_shader() { EXPECT_TRUE(false); return read_file("identity.frag"); }
 	virtual void rewrite_graph(EffectChain *graph, Node *self) {
@@ -689,4 +689,70 @@ TEST(EffectChainTest, DiamondGraphWithOneInputUsedInTwoPhases) {
 	tester.run(out_data, GL_RED, COLORSPACE_sRGB, GAMMA_LINEAR);
 
 	expect_equal(expected_data, out_data, 2, 2);
+}
+
+TEST(EffectChainTest, EffectUsedTwiceOnlyGetsOneGammaConversion) {
+	float data[] = {
+		0.735f, 0.0f,
+		0.735f, 0.0f,
+	};
+	float expected_data[] = {
+		0.0f, 0.5f,  // 0.5 and not 1.0, since AddEffect doesn't clamp alpha properly.
+		0.0f, 0.5f,
+	};
+	float out_data[2 * 2];
+	
+	EffectChainTester tester(NULL, 2, 2);
+	tester.add_input(data, FORMAT_GRAYSCALE, COLORSPACE_sRGB, GAMMA_sRGB);
+
+	// MirrorEffect does not get linear light, so the conversions will be
+	// inserted after it, not before.
+	RewritingEffect<MirrorEffect> *effect = new RewritingEffect<MirrorEffect>();
+	tester.get_chain()->add_effect(effect);
+
+	Effect *identity1 = tester.get_chain()->add_effect(new IdentityEffect(), effect);
+	Effect *identity2 = tester.get_chain()->add_effect(new IdentityEffect(), effect);
+	tester.get_chain()->add_effect(new AddEffect(), identity1, identity2);
+	tester.run(out_data, GL_RED, COLORSPACE_sRGB, GAMMA_LINEAR);
+
+	expect_equal(expected_data, out_data, 2, 2);
+
+	Node *node = effect->replaced_node;
+	ASSERT_EQ(1, node->incoming_links.size());
+	ASSERT_EQ(1, node->outgoing_links.size());
+	EXPECT_EQ("FlatInput", node->incoming_links[0]->effect->effect_type_id());
+	EXPECT_EQ("GammaExpansionEffect", node->outgoing_links[0]->effect->effect_type_id());
+}
+
+TEST(EffectChainTest, EffectUsedTwiceOnlyGetsOneColorspaceConversion) {
+	float data[] = {
+		0.5f, 0.0f,
+		0.5f, 0.0f,
+	};
+	float expected_data[] = {
+		0.0f, 0.5f,  // 0.5 and not 1.0, since AddEffect doesn't clamp alpha properly.
+		0.0f, 0.5f,
+	};
+	float out_data[2 * 2];
+	
+	EffectChainTester tester(NULL, 2, 2);
+	tester.add_input(data, FORMAT_GRAYSCALE, COLORSPACE_REC_601_625, GAMMA_LINEAR);
+
+	// MirrorEffect does not get linear light, so the conversions will be
+	// inserted after it, not before.
+	RewritingEffect<MirrorEffect> *effect = new RewritingEffect<MirrorEffect>();
+	tester.get_chain()->add_effect(effect);
+
+	Effect *identity1 = tester.get_chain()->add_effect(new IdentityEffect(), effect);
+	Effect *identity2 = tester.get_chain()->add_effect(new IdentityEffect(), effect);
+	tester.get_chain()->add_effect(new AddEffect(), identity1, identity2);
+	tester.run(out_data, GL_RED, COLORSPACE_sRGB, GAMMA_LINEAR);
+
+	expect_equal(expected_data, out_data, 2, 2);
+
+	Node *node = effect->replaced_node;
+	ASSERT_EQ(1, node->incoming_links.size());
+	ASSERT_EQ(1, node->outgoing_links.size());
+	EXPECT_EQ("FlatInput", node->incoming_links[0]->effect->effect_type_id());
+	EXPECT_EQ("ColorspaceConversionEffect", node->outgoing_links[0]->effect->effect_type_id());
 }

@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
+#include <locale.h>
 #include <assert.h>
 #include <GL/glew.h>
 
@@ -946,7 +947,7 @@ void EffectChain::fix_internal_color_spaces()
 			}
 
 			// Go through each input that is not sRGB, and insert
-			// a colorspace conversion before it.
+			// a colorspace conversion after it.
 			for (unsigned j = 0; j < node->incoming_links.size(); ++j) {
 				Node *input = node->incoming_links[j];
 				assert(input->output_color_space != COLORSPACE_INVALID);
@@ -957,7 +958,8 @@ void EffectChain::fix_internal_color_spaces()
 				CHECK(conversion->effect->set_int("source_space", input->output_color_space));
 				CHECK(conversion->effect->set_int("destination_space", COLORSPACE_sRGB));
 				conversion->output_color_space = COLORSPACE_sRGB;
-				insert_node_between(input, conversion, node);
+				replace_sender(input, conversion);
+				connect_nodes(input, conversion);
 			}
 
 			// Re-sort topologically, and propagate the new information.
@@ -1037,7 +1039,8 @@ void EffectChain::fix_internal_alpha(unsigned step)
 					conversion = add_node(new AlphaDivisionEffect());
 				}
 				conversion->output_alpha_type = desired_type;
-				insert_node_between(input, conversion, node);
+				replace_sender(input, conversion);
+				connect_nodes(input, conversion);
 			}
 
 			// Re-sort topologically, and propagate the new information.
@@ -1220,7 +1223,7 @@ void EffectChain::fix_internal_gamma_by_inserting_nodes(unsigned step)
 			}
 
 			// If not, go through each input that is not linear gamma,
-			// and insert a gamma conversion before it.
+			// and insert a gamma conversion after it.
 			for (unsigned j = 0; j < node->incoming_links.size(); ++j) {
 				Node *input = node->incoming_links[j];
 				assert(input->output_gamma_curve != GAMMA_INVALID);
@@ -1230,7 +1233,8 @@ void EffectChain::fix_internal_gamma_by_inserting_nodes(unsigned step)
 				Node *conversion = add_node(new GammaExpansionEffect());
 				CHECK(conversion->effect->set_int("source_curve", input->output_gamma_curve));
 				conversion->output_gamma_curve = GAMMA_LINEAR;
-				insert_node_between(input, conversion, node);
+				replace_sender(input, conversion);
+				connect_nodes(input, conversion);
 			}
 
 			// Re-sort topologically, and propagate the new information.
@@ -1307,6 +1311,10 @@ Node *EffectChain::find_output_node()
 
 void EffectChain::finalize()
 {
+	// Save the current locale, and set it to C, so that we can output decimal
+	// numbers with printf and be sure to get them in the format mandated by GLSL.
+	char *saved_locale = setlocale(LC_NUMERIC, "C");
+
 	// Output the graph as it is before we do any conversions on it.
 	output_dot("step0-start.dot");
 
@@ -1399,6 +1407,7 @@ void EffectChain::finalize()
 	assert(phases[0]->inputs.empty());
 	
 	finalized = true;
+	setlocale(LC_NUMERIC, saved_locale);
 }
 
 void EffectChain::render_to_fbo(GLuint dest_fbo, unsigned width, unsigned height)
