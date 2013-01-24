@@ -68,19 +68,20 @@ static int convert_image( mlt_frame frame, uint8_t **image, mlt_image_format *fo
 	mlt_log_verbose( NULL, "filter_movit_convert: %s -> %s\n",
 		mlt_image_format_name( *format ), mlt_image_format_name( output_format ) );
 
+	// Use CPU if glsl not initialized or not supported.
+	GlslManager* glsl = GlslManager::get_instance();
+	if ( !glsl || !glsl->get_int("glsl_supported" ) )
+		return convert_on_cpu( frame, image, format, output_format );
+
 	// Do non-GL image conversions on a CPU-based image converter.
 	if ( *format != mlt_image_glsl && output_format != mlt_image_glsl && output_format != mlt_image_glsl_texture )
 		return convert_on_cpu( frame, image, format, output_format );
-
-	mlt_producer producer = mlt_producer_cut_parent( mlt_frame_get_original_producer( frame ) );
-	GlslManager* glsl = GlslManager::get_instance();
-	if ( !glsl )
-		return 1;
 
 	int error = 0;
 	int width = mlt_properties_get_int( properties, "width" );
 	int height = mlt_properties_get_int( properties, "height" );
 	int img_size = mlt_image_format_size( *format, width, height, NULL );
+	mlt_producer producer = mlt_producer_cut_parent( mlt_frame_get_original_producer( frame ) );
 	EffectChain* chain = GlslManager::get_chain( producer );
 	MltInput* input = GlslManager::get_input( producer );
 
