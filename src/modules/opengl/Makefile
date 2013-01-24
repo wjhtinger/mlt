@@ -52,20 +52,21 @@ CPPOBJS += filter_movit_resize.o
 CPPOBJS += mlt_movit_input.o
 
 ifeq ($(targetos), MinGW)
-	LDFLAGS += -lopengl32
+	CFLAGS  += -DGLEW_STATIC
+	LDFLAGS += -lglew32 -lopengl32
 else
 ifeq ($(targetos), Darwin)
 	CFLAGS += -FOpenGL
-	LDFLAGS += -framework OpenGL
+	LDFLAGS += -framework OpenGL -lGLEW
 else
 	OBJS += consumer_xgl.o
-	LDFLAGS += -lpthread -lGL -lX11
+	LDFLAGS += -lpthread -lGL -lX11 -lGLEW
 endif
 endif
 
 CXXFLAGS += $(CFLAGS) -Wno-deprecated
 
-LDFLAGS += -L../../mlt++ -lmlt++ -lGLEW
+LDFLAGS += -L../../mlt++ -lmlt++
 
 SRCS := $(OBJS:.o=.c) $(CPPOBJS:.o=.cpp)
 
