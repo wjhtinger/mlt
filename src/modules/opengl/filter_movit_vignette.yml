@@ -18,10 +18,12 @@ parameters:
     title: Outer Radius
     type: float
     minimum: 0.0
+    maximum: 1.0
     default: 0.3
 
   - identifier: inner_radius
     title: Inner Radius
     type: float
     minimum: 0.0
+    maximum: 1.0
     default: 0.3
