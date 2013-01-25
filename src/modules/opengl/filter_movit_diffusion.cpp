@@ -27,7 +27,9 @@
 
 static mlt_frame process( mlt_filter filter, mlt_frame frame )
 {
-	Effect* effect = GlslManager::add_effect( filter, frame, new DiffusionEffect() );
+	Effect* effect = GlslManager::get_effect( filter, frame );
+	if ( !effect )
+		effect = GlslManager::add_effect( filter, frame, new DiffusionEffect() );
 	if ( effect ) {
 		mlt_properties filter_props = MLT_FILTER_PROPERTIES( filter );
 		bool ok = effect->set_float( "radius", mlt_properties_get_double( filter_props, "radius" ) );

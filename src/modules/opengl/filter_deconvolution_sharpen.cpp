@@ -27,7 +27,9 @@
 
 static mlt_frame process( mlt_filter filter, mlt_frame frame )
 {
-	Effect* effect = GlslManager::add_effect( filter, frame, new DeconvolutionSharpenEffect() );
+	Effect* effect = GlslManager::get_effect( filter, frame );
+	if ( !effect )
+		GlslManager::add_effect( filter, frame, new DeconvolutionSharpenEffect() );
 	if ( effect ) {
 		mlt_properties filter_props = MLT_FILTER_PROPERTIES( filter );
 		bool ok = effect->set_int( "matrix_size", mlt_properties_get_int( filter_props, "matrix_size" ) );
