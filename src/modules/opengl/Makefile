@@ -49,6 +49,7 @@ CPPOBJS += filter_movit_diffusion.o
 CPPOBJS += filter_movit_mirror.o
 CPPOBJS += filter_movit_resample.o
 CPPOBJS += filter_movit_resize.o
+CPPOBJS += filter_movit_vignette.o
 CPPOBJS += mlt_movit_input.o
 
 ifeq ($(targetos), MinGW)
