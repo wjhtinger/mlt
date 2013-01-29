@@ -17,157 +17,61 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include <mlt++/MltConsumer.h>
-#include <mlt++/MltFilter.h>
-#include <mlt++/MltProfile.h>
+#include <framework/mlt.h>
 #include <QtGui/QApplication>
 #include <QtCore/QLocale>
-#include <QtCore/QThread>
 #include <QtOpenGL/QGLWidget>
-#include <stdio.h>
 
-class QGlslConsumer : public QThread, public Mlt::Consumer
+static void onThreadStarted(mlt_properties owner, mlt_consumer consumer)
 {
-public:
-	bool isStopped;
+	mlt_service service = MLT_CONSUMER_SERVICE(consumer);
+	mlt_properties properties = MLT_CONSUMER_PROPERTIES(consumer);
+	mlt_filter filter = (mlt_filter) mlt_properties_get_data(properties, "glslManager", NULL);
+	mlt_properties filter_properties = MLT_FILTER_PROPERTIES(filter);
+	QApplication* app = qApp;
 
-	QGlslConsumer(mlt_profile profile)
-		: QThread(0)
-		, Mlt::Consumer(mlt_consumer_new(profile))
-		, isStopped(true)
-		, glslManager(0)
-		, app(qApp)
-		, renderContext(0)
-	{
-		mlt_filter filter = mlt_factory_filter(profile, "glsl.manager", 0);
-		if (filter) {
-			mlt_consumer consumer = get_consumer();
-			consumer->child = this;
-			glslManager = new Mlt::Filter(filter);
-			mlt_filter_close(filter); // glslManager holds the reference
-			set("mlt_image_format", "rgb24");
-			set("terminate_on_pause", 1);
-			set("real_time", -1);
-			set("buffer", 1);
-		} else {
-			mlt_consumer_close(get_consumer());
-		}
-	}
-
-	~QGlslConsumer()
-	{
-		delete renderContext;
-		delete glslManager;
-	}
-
-	void startGlsl()
-	{
+	mlt_log_verbose(service, "%s\n", __FUNCTION__);
 #ifdef linux
-		if ( getenv("DISPLAY") == 0 ) {
-			mlt_log_error( get_service(), "The qglsl consumer requires a X11 environment.\nPlease either run melt from an X session or use a fake X server like xvfb:\nxvfb-run -a melt (...)\n" );
-		} else
+	if ( getenv("DISPLAY") == 0 ) {
+		mlt_log_error(service, "The qglsl consumer requires a X11 environment.\nPlease either run melt from an X session or use a fake X server like xvfb:\nxvfb-run -a melt (...)\n" );
+	} else
 #endif
-		{
-			int argc = 1;
-			char* argv[1];
-			argv[0] = (char*) "MLT qglsl consumer";
-			app = new QApplication(argc, argv);
-			const char *localename = mlt_properties_get_lcnumeric(get_properties());
-			QLocale::setDefault(QLocale(localename));
-		}
-		renderContext = new QGLWidget;
-		renderContext->resize(0, 0);
-		renderContext->show();
-		app->processEvents();
-		glslManager->fire_event("init glsl");
-		if (!glslManager->get_int("glsl_supported")) {
-			mlt_log_fatal( get_service(),
-				"OpenGL Shading Language rendering is not supported on this machine.\n" );
-			this->fire_event("consumer-fatal-error");
-			isStopped = true;
-		}
+	if (!app) {
+		int argc = 1;
+		char* argv[1];
+		argv[0] = (char*) "MLT qglsl consumer";
+		app = new QApplication(argc, argv);
+		const char *localename = mlt_properties_get_lcnumeric(properties);
+		QLocale::setDefault(QLocale(localename));
 	}
-
-protected:
-	void run()
-	{
-		int terminate_on_pause = get_int("terminate_on_pause");
-		bool terminated = false;
-		mlt_frame frame = NULL;
-
-		isStopped = false;
-		while (!terminated && !isStopped) {
-			if ((frame = mlt_consumer_rt_frame(get_consumer()))) {
-				terminated = terminate_on_pause &&
-					mlt_properties_get_double(MLT_FRAME_PROPERTIES(frame), "_speed") == 0.0;
-				if (mlt_properties_get_int(MLT_FRAME_PROPERTIES(frame), "rendered")) {
-					mlt_events_fire(get_properties(), "consumer-frame-show", frame, NULL);
-					mlt_frame_write_ppm(frame);
-				}
-				mlt_frame_close(frame);
-			}
-		}
-		mlt_consumer_stopped(get_consumer());
+	QGLWidget* renderContext = new QGLWidget;
+	renderContext->resize(0, 0);
+	renderContext->show();
+	app->processEvents();
+	mlt_events_fire(filter_properties, "init glsl", NULL);
+	if (!mlt_properties_get_int(filter_properties, "glsl_supported")) {
+		mlt_log_fatal(service,
+			"OpenGL Shading Language rendering is not supported on this machine.\n" );
+		mlt_events_fire(properties, "consumer-fatal-error", NULL);
 	}
-
-private:
-	Mlt::Filter* glslManager;
-	QApplication* app;
-	QGLWidget* renderContext;
-};
-
-static int start(mlt_consumer consumer)
-{
-	QGlslConsumer* glsl = (QGlslConsumer*) consumer->child;
-	glsl->QThread::start();
-	return 0;
-}
-
-static int is_stopped(mlt_consumer consumer)
-{
-	QGlslConsumer* qglsl = (QGlslConsumer*) consumer->child;
-	return !qglsl->isRunning();
-}
-
-static int stop(mlt_consumer consumer)
-{
-	QGlslConsumer* qglsl = (QGlslConsumer*) consumer->child;
-	qglsl->isStopped = true;
-	qglsl->wait();
-	return 0;
-}
-
-static void close(mlt_consumer consumer)
-{
-	QGlslConsumer* c = (QGlslConsumer*) consumer->child;
-	mlt_consumer_close(consumer);
-	delete c;
-}
-
-static void onThreadStarted(mlt_properties owner, QGlslConsumer* qglsl)
-{
-	mlt_log_verbose(qglsl->get_service(), "%s\n", __FUNCTION__);
-	qglsl->startGlsl();
 }
 
 extern "C" {
 
 mlt_consumer consumer_qglsl_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg )
 {
-	QGlslConsumer* consumer = new QGlslConsumer(profile);
-	if (consumer->get_consumer()) {
-		mlt_consumer c = consumer->get_consumer();
-		// These callbacks in C are so just so much cleaner to set in C.
-		c->start = start;
-		c->is_stopped = is_stopped;
-		c->stop = stop;
-		c->close = close;
-		consumer->listen("consumer-thread-started", consumer, (mlt_listener) onThreadStarted);
-		return c;
-	} else {
-		delete consumer;
-		return NULL;
+	mlt_consumer consumer = mlt_factory_consumer(profile, "multi", arg);
+	if (consumer) {
+		mlt_filter filter = mlt_factory_filter(profile, "glsl.manager", 0);
+		if (filter) {
+			mlt_properties properties = MLT_CONSUMER_PROPERTIES(consumer);
+			mlt_properties_set_data(properties, "glslManager", filter, 0, (mlt_destructor) mlt_filter_close, NULL);
+			mlt_events_listen(properties, consumer, "consumer-thread-started", (mlt_listener) onThreadStarted);
+			return consumer;
+		}
+		mlt_consumer_close(consumer);
 	}
+	return NULL;
 }
 
 }
