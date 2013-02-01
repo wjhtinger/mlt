@@ -46,10 +46,14 @@ CPPOBJS += filter_movit_blur.o
 CPPOBJS += filter_movit_convert.o
 CPPOBJS += filter_deconvolution_sharpen.o
 CPPOBJS += filter_movit_diffusion.o
+CPPOBJS += filter_movit_glow.o
+CPPOBJS += filter_lift_gamma_gain.o
 CPPOBJS += filter_movit_mirror.o
 CPPOBJS += filter_movit_resample.o
 CPPOBJS += filter_movit_resize.o
+CPPOBJS += filter_movit_saturation.o
 CPPOBJS += filter_movit_vignette.o
+CPPOBJS += filter_white_balance.o
 CPPOBJS += mlt_movit_input.o
 
 ifeq ($(targetos), MinGW)

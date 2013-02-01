@@ -29,10 +29,14 @@ extern mlt_filter filter_movit_blur_init( mlt_profile profile, mlt_service_type 
 extern mlt_filter filter_movit_convert_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
 extern mlt_filter filter_deconvolution_sharpen_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
 extern mlt_filter filter_movit_diffusion_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
+extern mlt_filter filter_movit_glow_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
+extern mlt_filter filter_lift_gamma_gain_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
 extern mlt_filter filter_movit_mirror_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
 extern mlt_filter filter_movit_resample_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
 extern mlt_filter filter_movit_resize_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
+extern mlt_filter filter_movit_saturation_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
 extern mlt_filter filter_movit_vignette_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
+extern mlt_filter filter_white_balance_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
 
 extern mlt_transition transition_glsl_luma_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
 
@@ -52,15 +56,23 @@ MLT_REPOSITORY
 	MLT_REGISTER( filter_type, "movit.blur", filter_movit_blur_init );
 	MLT_REGISTER( filter_type, "movit.convert", filter_movit_convert_init );
 	MLT_REGISTER( filter_type, "movit.diffusion", filter_movit_diffusion_init );
+	MLT_REGISTER( filter_type, "movit.glow", filter_movit_glow_init );
+	MLT_REGISTER( filter_type, "movit.lift_gamma_gain", filter_lift_gamma_gain_init );
 	MLT_REGISTER( filter_type, "movit.mirror", filter_movit_mirror_init );
 	MLT_REGISTER( filter_type, "movit.resample", filter_movit_resample_init );
 	MLT_REGISTER( filter_type, "movit.resize", filter_movit_resize_init );
+	MLT_REGISTER( filter_type, "movit.saturation", filter_movit_saturation_init );
 	MLT_REGISTER( filter_type, "movit.sharpen", filter_deconvolution_sharpen_init );
 	MLT_REGISTER( filter_type, "movit.vignette", filter_movit_vignette_init );
+	MLT_REGISTER( filter_type, "movit.white_balance", filter_white_balance_init );
 
 	MLT_REGISTER_METADATA( filter_type, "movit.blur", metadata, "filter_movit_blur.yml" );
 	MLT_REGISTER_METADATA( filter_type, "movit.diffusion", metadata, "filter_movit_diffusion.yml" );
+	MLT_REGISTER_METADATA( filter_type, "movit.glow", metadata, "filter_movit_glow.yml" );
+	MLT_REGISTER_METADATA( filter_type, "movit.lift_gamma_gain", metadata, "filter_lift_gamma_gain.yml" );
 	MLT_REGISTER_METADATA( filter_type, "movit.mirror", metadata, "filter_movit_mirror.yml" );
+	MLT_REGISTER_METADATA( filter_type, "movit.saturation", metadata, "filter_movit_saturation.yml" );
 	MLT_REGISTER_METADATA( filter_type, "movit.sharpen", metadata, "filter_deconvolution_sharpen.yml" );
 	MLT_REGISTER_METADATA( filter_type, "movit.vignette", metadata, "filter_movit_vignette.yml" );
+	MLT_REGISTER_METADATA( filter_type, "movit.white_balance", metadata, "filter_white_balance.yml" );
 }
