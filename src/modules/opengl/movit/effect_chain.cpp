@@ -571,16 +571,30 @@ void EffectChain::output_dot_edge(FILE *fp,
 	}
 }
 
-unsigned EffectChain::fit_rectangle_to_aspect(unsigned width, unsigned height)
+void EffectChain::size_rectangle_to_fit(unsigned width, unsigned height, unsigned *output_width, unsigned *output_height)
 {
+	unsigned scaled_width, scaled_height;
+
 	if (float(width) * aspect_denom >= float(height) * aspect_nom) {
 		// Same aspect, or W/H > aspect (image is wider than the frame).
-		// In either case, keep width.
-		return width;
+		// In either case, keep width, and adjust height.
+		scaled_width = width;
+		scaled_height = lrintf(width * aspect_denom / aspect_nom);
 	} else {
 		// W/H < aspect (image is taller than the frame), so keep height,
-		// and adjust width correspondingly.
-		return lrintf(height * aspect_nom / aspect_denom);
+		// and adjust width.
+		scaled_width = lrintf(height * aspect_nom / aspect_denom);
+		scaled_height = height;
+	}
+
+	// We should be consistently larger or smaller then the existing choice,
+	// since we have the same aspect.
+	assert(!(scaled_width < *output_width && scaled_height > *output_height));
+	assert(!(scaled_height < *output_height && scaled_width > *output_width));
+
+	if (scaled_width >= *output_width && scaled_height >= *output_height) {
+		*output_width = scaled_width;
+		*output_height = scaled_height;
 	}
 }
 
@@ -604,8 +618,8 @@ void EffectChain::inform_input_sizes(Phase *phase)
 	}
 	for (unsigned i = 0; i < phase->inputs.size(); ++i) {
 		Node *input = phase->inputs[i];
-		input->output_width = input->phase->output_width;
-		input->output_height = input->phase->output_height;
+		input->output_width = input->phase->virtual_output_width;
+		input->output_height = input->phase->virtual_output_height;
 		assert(input->output_width != 0);
 		assert(input->output_height != 0);
 	}
@@ -648,20 +662,25 @@ void EffectChain::find_output_size(Phase *phase)
 
 	// If the last effect explicitly sets an output size, use that.
 	if (output_node->effect->changes_output_size()) {
-		output_node->effect->get_output_size(&phase->output_width, &phase->output_height);
+		output_node->effect->get_output_size(&phase->output_width, &phase->output_height,
+		                                     &phase->virtual_output_width, &phase->virtual_output_height);
 		return;
 	}
 
-	// If not, look at the input phases and textures.
-	// We select the largest one (by fit into the current aspect).
-	unsigned best_width = 0;
+	// If all effects have the same size, use that.
+	unsigned output_width = 0, output_height = 0;
+	bool all_inputs_same_size = true;
+
 	for (unsigned i = 0; i < phase->inputs.size(); ++i) {
 		Node *input = phase->inputs[i];
 		assert(input->phase->output_width != 0);
 		assert(input->phase->output_height != 0);
-		unsigned width = fit_rectangle_to_aspect(input->phase->output_width, input->phase->output_height);
-		if (width > best_width) {
-			best_width = width;
+		if (output_width == 0 && output_height == 0) {
+			output_width = input->phase->virtual_output_width;
+			output_height = input->phase->virtual_output_height;
+		} else if (output_width != input->phase->virtual_output_width ||
+		           output_height != input->phase->virtual_output_height) {
+			all_inputs_same_size = false;
 		}
 	}
 	for (unsigned i = 0; i < phase->effects.size(); ++i) {
@@ -671,14 +690,45 @@ void EffectChain::find_output_size(Phase *phase)
 		}
 
 		Input *input = static_cast<Input *>(effect);
-		unsigned width = fit_rectangle_to_aspect(input->get_width(), input->get_height());
-		if (width > best_width) {
-			best_width = width;
+		if (output_width == 0 && output_height == 0) {
+			output_width = input->get_width();
+			output_height = input->get_height();
+		} else if (output_width != input->get_width() ||
+		           output_height != input->get_height()) {
+			all_inputs_same_size = false;
 		}
 	}
-	assert(best_width != 0);
-	phase->output_width = best_width;
-	phase->output_height = best_width * aspect_denom / aspect_nom;
+
+	if (all_inputs_same_size) {
+		assert(output_width != 0);
+		assert(output_height != 0);
+		phase->virtual_output_width = phase->output_width = output_width;
+		phase->virtual_output_height = phase->output_height = output_height;
+		return;
+	}
+
+	// If not, fit all the inputs into the current aspect, and select the largest one. 
+	output_width = 0;
+	output_height = 0;
+	for (unsigned i = 0; i < phase->inputs.size(); ++i) {
+		Node *input = phase->inputs[i];
+		assert(input->phase->output_width != 0);
+		assert(input->phase->output_height != 0);
+		size_rectangle_to_fit(input->phase->output_width, input->phase->output_height, &output_width, &output_height);
+	}
+	for (unsigned i = 0; i < phase->effects.size(); ++i) {
+		Effect *effect = phase->effects[i]->effect;
+		if (effect->num_inputs() != 0) {
+			continue;
+		}
+
+		Input *input = static_cast<Input *>(effect);
+		size_rectangle_to_fit(input->get_width(), input->get_height(), &output_width, &output_height);
+	}
+	assert(output_width != 0);
+	assert(output_height != 0);
+	phase->virtual_output_width = phase->output_width = output_width;
+	phase->virtual_output_height = phase->output_height = output_height;
 }
 
 void EffectChain::sort_all_nodes_topologically()
@@ -726,12 +776,13 @@ void EffectChain::find_color_spaces_for_inputs()
 			case Effect::OUTPUT_BLANK_ALPHA:
 				node->output_alpha_type = ALPHA_BLANK;
 				break;
-			case Effect::INPUT_AND_OUTPUT_ALPHA_PREMULTIPLIED:
+			case Effect::INPUT_AND_OUTPUT_PREMULTIPLIED_ALPHA:
 				node->output_alpha_type = ALPHA_PREMULTIPLIED;
 				break;
-			case Effect::OUTPUT_ALPHA_POSTMULTIPLIED:
+			case Effect::OUTPUT_POSTMULTIPLIED_ALPHA:
 				node->output_alpha_type = ALPHA_POSTMULTIPLIED;
 				break;
+			case Effect::INPUT_PREMULTIPLIED_ALPHA_KEEP_BLANK:
 			case Effect::DONT_CARE_ALPHA_TYPE:
 			default:
 				assert(false);
@@ -835,7 +886,7 @@ void EffectChain::propagate_alpha()
 		}
 
 		// Only inputs can have unconditional alpha output (OUTPUT_BLANK_ALPHA
-		// or OUTPUT_ALPHA_POSTMULTIPLIED), and they have already been
+		// or OUTPUT_POSTMULTIPLIED_ALPHA), and they have already been
 		// taken care of above. Rationale: Even if you could imagine
 		// e.g. an effect that took in an image and set alpha=1.0
 		// unconditionally, it wouldn't make any sense to have it as
@@ -843,7 +894,8 @@ void EffectChain::propagate_alpha()
 		// got its input pre- or postmultiplied, so it wouldn't know
 		// whether to divide away the old alpha or not.
 		Effect::AlphaHandling alpha_handling = node->effect->alpha_handling();
-		assert(alpha_handling == Effect::INPUT_AND_OUTPUT_ALPHA_PREMULTIPLIED ||
+		assert(alpha_handling == Effect::INPUT_AND_OUTPUT_PREMULTIPLIED_ALPHA ||
+		       alpha_handling == Effect::INPUT_PREMULTIPLIED_ALPHA_KEEP_BLANK ||
 		       alpha_handling == Effect::DONT_CARE_ALPHA_TYPE);
 
 		// If the node has multiple inputs, check that they are all valid and
@@ -883,16 +935,16 @@ void EffectChain::propagate_alpha()
 			continue;
 		}
 
-		if (alpha_handling == Effect::INPUT_AND_OUTPUT_ALPHA_PREMULTIPLIED) {
+		if (alpha_handling == Effect::INPUT_AND_OUTPUT_PREMULTIPLIED_ALPHA ||
+		    alpha_handling == Effect::INPUT_PREMULTIPLIED_ALPHA_KEEP_BLANK) {
 			// If the effect has asked for premultiplied alpha, check that it has got it.
 			if (any_postmultiplied) {
 				node->output_alpha_type = ALPHA_INVALID;
+			} else if (!any_premultiplied &&
+			           alpha_handling == Effect::INPUT_PREMULTIPLIED_ALPHA_KEEP_BLANK) {
+				// Blank input alpha, and the effect preserves blank alpha.
+				node->output_alpha_type = ALPHA_BLANK;
 			} else {
-				// In some rare cases, it might be advantageous to say
-				// that blank input alpha yields blank output alpha.
-				// However, this would cause a more complex Effect interface
-				// an effect would need to guarantee that it doesn't mess with
-				// blank alpha), so this is the simplest.
 				node->output_alpha_type = ALPHA_PREMULTIPLIED;
 			}
 		} else {
@@ -1091,14 +1143,14 @@ void EffectChain::fix_output_alpha()
 		return;
 	}
 	if (output->output_alpha_type == ALPHA_PREMULTIPLIED &&
-	    output_alpha_format == OUTPUT_ALPHA_POSTMULTIPLIED) {
+	    output_alpha_format == OUTPUT_ALPHA_FORMAT_POSTMULTIPLIED) {
 		Node *conversion = add_node(new AlphaDivisionEffect());
 		connect_nodes(output, conversion);
 		propagate_alpha();
 		propagate_gamma_and_color_space();
 	}
 	if (output->output_alpha_type == ALPHA_POSTMULTIPLIED &&
-	    output_alpha_format == OUTPUT_ALPHA_PREMULTIPLIED) {
+	    output_alpha_format == OUTPUT_ALPHA_FORMAT_PREMULTIPLIED) {
 		Node *conversion = add_node(new AlphaMultiplicationEffect());
 		connect_nodes(output, conversion);
 		propagate_alpha();

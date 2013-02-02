@@ -29,6 +29,7 @@ public:
 	// down quite a lot.
 	virtual bool needs_texture_bounce() const { return true; }
 	virtual bool needs_srgb_primaries() const { return false; }
+	virtual AlphaHandling alpha_handling() const { return INPUT_PREMULTIPLIED_ALPHA_KEEP_BLANK; }
 
 	virtual void inform_input_size(unsigned input_num, unsigned width, unsigned height);
 
@@ -70,9 +71,9 @@ public:
 	}
 	virtual bool changes_output_size() const { return true; }
 
-	virtual void get_output_size(unsigned *width, unsigned *height) const {
-		*width = this->output_width;
-		*height = this->output_height;
+	virtual void get_output_size(unsigned *width, unsigned *height, unsigned *virtual_width, unsigned *virtual_height) const {
+		*virtual_width = *width = this->output_width;
+		*virtual_height = *height = this->output_height;
 	}
 
 	void set_gl_state(GLuint glsl_program_num, const std::string &prefix, unsigned *sampler_num);

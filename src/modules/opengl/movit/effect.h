@@ -99,7 +99,8 @@ public:
 	// This is the most natural format for processing, and the default in
 	// most of Movit (just like linear light is).
 	//
-	// If you set INPUT_AND_OUTPUT_ALPHA_PREMULTIPLIED, all of your inputs
+	// If you set INPUT_AND_OUTPUT_PREMULTIPLIED_ALPHA or
+	// INPUT_PREMULTIPLIED_ALPHA_KEEP_BLANK, all of your inputs
 	// (if any) are guaranteed to also be in premultiplied alpha.
 	// Otherwise, you can get postmultiplied or premultiplied alpha;
 	// you won't know. If you have multiple inputs, you will get the same
@@ -113,22 +114,32 @@ public:
 		// pre- and postmultiplied.
 		OUTPUT_BLANK_ALPHA,
 
+		// Always outputs postmultiplied alpha. Only appropriate for inputs.
+		OUTPUT_POSTMULTIPLIED_ALPHA,
+
 		// Always outputs premultiplied alpha. As noted above,
 		// you will then also get all inputs in premultiplied alpha.
 		// If you set this, you should also set needs_linear_light().
-		INPUT_AND_OUTPUT_ALPHA_PREMULTIPLIED,
+		INPUT_AND_OUTPUT_PREMULTIPLIED_ALPHA,
 
-		// Always outputs postmultiplied alpha. Only appropriate for inputs.
-		OUTPUT_ALPHA_POSTMULTIPLIED,
+		// Like INPUT_AND_OUTPUT_PREMULTIPLIED_ALPHA, but also guarantees
+		// that if you get blank alpha in, you also keep blank alpha out.
+		// This is a somewhat weaker guarantee than DONT_CARE_ALPHA_TYPE,
+		// but is still useful in many situations, and appropriate when
+		// e.g. you don't touch alpha at all.
+		//
+		// Does not make sense for inputs.
+		INPUT_PREMULTIPLIED_ALPHA_KEEP_BLANK,
 
-		// Keeps the type of alpha unchanged from input to output.
-		// Usually appropriate if you process all color channels
-		// in a linear fashion, and do not change alpha.
+		// Keeps the type of alpha (premultiplied, postmultiplied, blank)
+		// unchanged from input to output. Usually appropriate if you
+		// process all color channels in a linear fashion, do not change
+		// alpha, and do not produce any new pixels thare have alpha != 1.0.
 		//
 		// Does not make sense for inputs.
 		DONT_CARE_ALPHA_TYPE,
 	};
-	virtual AlphaHandling alpha_handling() const { return INPUT_AND_OUTPUT_ALPHA_PREMULTIPLIED; }
+	virtual AlphaHandling alpha_handling() const { return INPUT_AND_OUTPUT_PREMULTIPLIED_ALPHA; }
 
 	// Whether this effect expects its input to come directly from
 	// a texture. If this is true, the framework will not chain the
@@ -168,11 +179,16 @@ public:
 	virtual bool changes_output_size() const { return false; }
 
 	// If changes_output_size() is true, you must implement this to tell
-	// the framework what output size you want.
+	// the framework what output size you want. Also, you can set a
+	// virtual width/height, which is the size the next effect (if any)
+	// will _think_ your data is in. This is primarily useful if you are
+	// relying on getting OpenGL's bilinear resizing for free; otherwise,
+	// your virtual_width/virtual_height should be the same as width/height.
 	//
 	// Note that it is explicitly allowed to change width and height
 	// from frame to frame; EffectChain will reallocate textures as needed.
-	virtual void get_output_size(unsigned *width, unsigned *height) const {
+	virtual void get_output_size(unsigned *width, unsigned *height,
+	                             unsigned *virtual_width, unsigned *virtual_height) const {
 		assert(false);
 	}
 

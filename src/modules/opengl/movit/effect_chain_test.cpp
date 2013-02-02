@@ -439,11 +439,69 @@ TEST(EffectChainTest, NoAlphaConversionsWithBlankAlpha) {
 	EffectChainTester tester(NULL, size, 1);
 	RewritingToBlueInput *input = new RewritingToBlueInput();
 	tester.get_chain()->add_input(input);
-	tester.run(out_data, GL_RGBA, COLORSPACE_sRGB, GAMMA_LINEAR, OUTPUT_ALPHA_PREMULTIPLIED);
+	tester.run(out_data, GL_RGBA, COLORSPACE_sRGB, GAMMA_LINEAR, OUTPUT_ALPHA_FORMAT_PREMULTIPLIED);
 
 	Node *node = input->blue_node;
 	EXPECT_EQ(0, node->incoming_links.size());
 	EXPECT_EQ(0, node->outgoing_links.size());
+
+	expect_equal(data, out_data, 4, size);
+}
+
+// An effect that does nothing, and specifies that it preserves blank alpha.
+class BlankAlphaPreservingEffect : public Effect {
+public:
+	BlankAlphaPreservingEffect() {}
+	virtual std::string effect_type_id() const { return "BlankAlphaPreservingEffect"; }
+	std::string output_fragment_shader() { return read_file("identity.frag"); }
+	virtual AlphaHandling alpha_handling() const { return INPUT_PREMULTIPLIED_ALPHA_KEEP_BLANK; }
+};
+
+TEST(EffectChainTest, NoAlphaConversionsWithBlankAlphaPreservingEffect) {
+	const int size = 3;
+	float data[4 * size] = {
+		0.0f, 0.0f, 1.0f, 1.0f,
+		0.0f, 0.0f, 1.0f, 1.0f,
+		0.0f, 0.0f, 1.0f, 1.0f,
+	};
+	float out_data[4 * size];
+	EffectChainTester tester(NULL, size, 1);
+	tester.get_chain()->add_input(new BlueInput());
+	tester.get_chain()->add_effect(new BlankAlphaPreservingEffect());
+	RewritingEffect<MirrorEffect> *effect = new RewritingEffect<MirrorEffect>();
+	tester.get_chain()->add_effect(effect);
+	tester.run(out_data, GL_RGBA, COLORSPACE_sRGB, GAMMA_LINEAR, OUTPUT_ALPHA_FORMAT_POSTMULTIPLIED);
+
+	Node *node = effect->replaced_node;
+	EXPECT_EQ(1, node->incoming_links.size());
+	EXPECT_EQ(0, node->outgoing_links.size());
+
+	expect_equal(data, out_data, 4, size);
+}
+
+// This is the counter-test to NoAlphaConversionsWithBlankAlphaPreservingEffect;
+// just to be sure that with a normal INPUT_AND_OUTPUT_PREMULTIPLIED_ALPHA effect,
+// an alpha conversion _should_ be inserted at the very end. (There is some overlap
+// with other tests.)
+TEST(EffectChainTest, AlphaConversionsWithNonBlankAlphaPreservingEffect) {
+	const int size = 3;
+	float data[4 * size] = {
+		0.0f, 0.0f, 1.0f, 1.0f,
+		0.0f, 0.0f, 1.0f, 1.0f,
+		0.0f, 0.0f, 1.0f, 1.0f,
+	};
+	float out_data[4 * size];
+	EffectChainTester tester(NULL, size, 1);
+	tester.get_chain()->add_input(new BlueInput());
+	tester.get_chain()->add_effect(new IdentityEffect());  // Not BlankAlphaPreservingEffect.
+	RewritingEffect<MirrorEffect> *effect = new RewritingEffect<MirrorEffect>();
+	tester.get_chain()->add_effect(effect);
+	tester.run(out_data, GL_RGBA, COLORSPACE_sRGB, GAMMA_LINEAR, OUTPUT_ALPHA_FORMAT_POSTMULTIPLIED);
+
+	Node *node = effect->replaced_node;
+	EXPECT_EQ(1, node->incoming_links.size());
+	EXPECT_EQ(1, node->outgoing_links.size());
+	EXPECT_EQ("AlphaDivisionEffect", node->outgoing_links[0]->effect->effect_type_id());
 
 	expect_equal(data, out_data, 4, size);
 }
@@ -755,4 +813,145 @@ TEST(EffectChainTest, EffectUsedTwiceOnlyGetsOneColorspaceConversion) {
 	ASSERT_EQ(1, node->outgoing_links.size());
 	EXPECT_EQ("FlatInput", node->incoming_links[0]->effect->effect_type_id());
 	EXPECT_EQ("ColorspaceConversionEffect", node->outgoing_links[0]->effect->effect_type_id());
+}
+
+// An effect that does nothing, but requests texture bounce and stores
+// its input size.
+class SizeStoringEffect : public BouncingIdentityEffect {
+public:
+	SizeStoringEffect() : input_width(-1), input_height(-1) {}
+	virtual void inform_input_size(unsigned input_num, unsigned width, unsigned height) {
+		assert(input_num == 0);
+		input_width = width;
+		input_height = height;
+	}
+	virtual std::string effect_type_id() const { return "SizeStoringEffect"; }
+
+	int input_width, input_height;
+};
+
+TEST(EffectChainTest, SameInputsGiveSameOutputs) {
+	float data[2 * 2] = {
+		0.0f, 0.0f,
+		0.0f, 0.0f,
+	};
+	float out_data[2 * 2];
+	
+	EffectChainTester tester(NULL, 4, 3);  // Note non-square aspect.
+
+	ImageFormat format;
+	format.color_space = COLORSPACE_sRGB;
+	format.gamma_curve = GAMMA_LINEAR;
+
+	FlatInput *input1 = new FlatInput(format, FORMAT_GRAYSCALE, GL_FLOAT, 2, 2);
+	input1->set_pixel_data(data);
+	
+	FlatInput *input2 = new FlatInput(format, FORMAT_GRAYSCALE, GL_FLOAT, 2, 2);
+	input2->set_pixel_data(data);
+
+	SizeStoringEffect *input_store = new SizeStoringEffect();
+
+	tester.get_chain()->add_input(input1);
+	tester.get_chain()->add_input(input2);
+	tester.get_chain()->add_effect(new AddEffect(), input1, input2);
+	tester.get_chain()->add_effect(input_store);
+	tester.run(out_data, GL_RED, COLORSPACE_sRGB, GAMMA_LINEAR);
+
+	EXPECT_EQ(2, input_store->input_width);
+	EXPECT_EQ(2, input_store->input_height);
+}
+
+TEST(EffectChainTest, AspectRatioConversion) {
+	float data1[4 * 3] = {
+		0.0f, 0.0f, 0.0f, 0.0f,
+		0.0f, 0.0f, 0.0f, 0.0f,
+		0.0f, 0.0f, 0.0f, 0.0f,
+	};
+	float data2[7 * 7] = {
+		0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+		0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+		0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+		0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+		0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+		0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+		0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+	};
+
+	// The right conversion here is that the 7x7 image decides the size,
+	// since it is the biggest, so everything is scaled up to 9x7
+	// (keep the height, round the width 9.333 to 9). 
+	float out_data[9 * 7];
+	
+	EffectChainTester tester(NULL, 4, 3);
+
+	ImageFormat format;
+	format.color_space = COLORSPACE_sRGB;
+	format.gamma_curve = GAMMA_LINEAR;
+
+	FlatInput *input1 = new FlatInput(format, FORMAT_GRAYSCALE, GL_FLOAT, 4, 3);
+	input1->set_pixel_data(data1);
+	
+	FlatInput *input2 = new FlatInput(format, FORMAT_GRAYSCALE, GL_FLOAT, 7, 7);
+	input2->set_pixel_data(data2);
+
+	SizeStoringEffect *input_store = new SizeStoringEffect();
+
+	tester.get_chain()->add_input(input1);
+	tester.get_chain()->add_input(input2);
+	tester.get_chain()->add_effect(new AddEffect(), input1, input2);
+	tester.get_chain()->add_effect(input_store);
+	tester.run(out_data, GL_RED, COLORSPACE_sRGB, GAMMA_LINEAR);
+
+	EXPECT_EQ(9, input_store->input_width);
+	EXPECT_EQ(7, input_store->input_height);
+}
+
+// An effect that does nothing except changing its output sizes.
+class VirtualResizeEffect : public Effect {
+public:
+	VirtualResizeEffect(int width, int height, int virtual_width, int virtual_height)
+		: width(width),
+		  height(height),
+		  virtual_width(virtual_width),
+		  virtual_height(virtual_height) {}
+	virtual std::string effect_type_id() const { return "VirtualResizeEffect"; }
+	std::string output_fragment_shader() { return read_file("identity.frag"); }
+
+	virtual bool changes_output_size() const { return true; }
+
+	virtual void get_output_size(unsigned *width, unsigned *height,
+	                             unsigned *virtual_width, unsigned *virtual_height) const {
+		*width = this->width;
+		*height = this->height;
+		*virtual_width = this->virtual_width;
+		*virtual_height = this->virtual_height;
+	}
+
+private:
+	int width, height, virtual_width, virtual_height;
+};
+
+TEST(EffectChainTest, VirtualSizeIsSentOnToInputs) {
+	const int size = 2, bigger_size = 3;
+	float data[size * size] = {
+		1.0f, 0.0f,
+		0.0f, 1.0f,
+	};
+	float out_data[size * size];
+	
+	EffectChainTester tester(data, size, size, FORMAT_GRAYSCALE, COLORSPACE_sRGB, GAMMA_LINEAR);
+
+	SizeStoringEffect *size_store = new SizeStoringEffect();
+
+	tester.get_chain()->add_effect(new VirtualResizeEffect(size, size, bigger_size, bigger_size));
+	tester.get_chain()->add_effect(size_store);
+	tester.get_chain()->add_effect(new VirtualResizeEffect(size, size, size, size));
+	tester.run(out_data, GL_RED, COLORSPACE_sRGB, GAMMA_LINEAR);
+
+	EXPECT_EQ(bigger_size, size_store->input_width);
+	EXPECT_EQ(bigger_size, size_store->input_height);
+
+	// If the resize is implemented as non-virtual, we'll fail here,
+	// since bilinear scaling from 2x2 → 3x3 → 2x2 is not very exact.
+	expect_equal(data, out_data, size, size);
 }

@@ -9,7 +9,7 @@
 #include "input.h"
 
 class EffectChain;
-class Phase;
+struct Phase;
 
 // For internal use within Node.
 enum AlphaType {
@@ -22,8 +22,8 @@ enum AlphaType {
 // Whether you want pre- or postmultiplied alpha in the output
 // (see effect.h for a discussion of pre- versus postmultiplied alpha).
 enum OutputAlphaFormat {
-	OUTPUT_ALPHA_PREMULTIPLIED,
-	OUTPUT_ALPHA_POSTMULTIPLIED,
+	OUTPUT_ALPHA_FORMAT_PREMULTIPLIED,
+	OUTPUT_ALPHA_FORMAT_POSTMULTIPLIED,
 };
 
 // A node in the graph; basically an effect and some associated information.
@@ -72,7 +72,7 @@ struct Phase {
 	std::vector<Node *> inputs;
 
 	std::vector<Node *> effects;  // In order.
-	unsigned output_width, output_height;
+	unsigned output_width, output_height, virtual_output_width, virtual_output_height;
 };
 
 class EffectChain {
@@ -148,9 +148,10 @@ public:
 	void insert_node_between(Node *sender, Node *middle, Node *receiver);
 
 private:
-	// Fits a rectangle of the given size to the current aspect ratio
-	// (aspect_nom/aspect_denom) and returns the new width and height.
-	unsigned fit_rectangle_to_aspect(unsigned width, unsigned height);
+	// Make sure the output rectangle is at least large enough to hold
+	// the given input rectangle in both dimensions, and is of the
+	// current aspect ratio (aspect_nom/aspect_denom).
+	void size_rectangle_to_fit(unsigned width, unsigned height, unsigned *output_width, unsigned *output_height);
 
 	// Compute the input sizes for all inputs for all effects in a given phase,
 	// and inform the effects about the results.	
