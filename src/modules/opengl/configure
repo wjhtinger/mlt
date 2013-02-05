@@ -2,13 +2,12 @@
 
 if [ "$help" != "1" ]
 then
-#	TODO: test for OpenGL
-#	if [ ! $(pkg-config libdv) ]
-#	then
-#		echo "- libdv not found: disabling"
-#		touch ../disable-dv
-#		exit 0
-#	fi
+	if ! $(pkg-config movit)
+	then
+		echo "- movit not found: disabling"
+		touch ../disable-opengl
+		exit 0
+	fi
 
 	echo > config.mak
 	case $targetos in
@@ -19,4 +18,5 @@ then
 	*)
 		;;
 	esac
+	exit 0
 fi

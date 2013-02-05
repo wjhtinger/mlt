@@ -1,4 +1,4 @@
-CFLAGS += -I../.. -I../../eigen3
+CFLAGS += -I../..
 
 LDFLAGS += -L../../framework -lmlt -lm
 
@@ -9,39 +9,6 @@ TARGET = ../libmltopengl$(LIBSUF)
 OBJS = factory.o
 
 CPPOBJS = filter_glsl_manager.o
-
-# Movit Core
-CPPOBJS += movit/util.o movit/effect.o movit/effect_chain.o movit/init.o
-
-# Movit Inputs
-CPPOBJS += movit/flat_input.o
-CPPOBJS += movit/ycbcr_input.o
-
-# Movit Effects
-CPPOBJS += movit/lift_gamma_gain_effect.o
-CPPOBJS += movit/white_balance_effect.o
-CPPOBJS += movit/gamma_expansion_effect.o
-CPPOBJS += movit/gamma_compression_effect.o
-CPPOBJS += movit/colorspace_conversion_effect.o
-CPPOBJS += movit/saturation_effect.o
-CPPOBJS += movit/vignette_effect.o
-CPPOBJS += movit/mirror_effect.o
-CPPOBJS += movit/blur_effect.o
-CPPOBJS += movit/diffusion_effect.o
-CPPOBJS += movit/glow_effect.o
-CPPOBJS += movit/unsharp_mask_effect.o
-CPPOBJS += movit/mix_effect.o
-CPPOBJS += movit/resize_effect.o
-CPPOBJS += movit/resample_effect.o
-CPPOBJS += movit/dither_effect.o
-CPPOBJS += movit/deconvolution_sharpen_effect.o
-CPPOBJS += movit/sandbox_effect.o
-CPPOBJS += movit/overlay_effect.o
-CPPOBJS += movit/alpha_division_effect.o
-CPPOBJS += movit/alpha_multiplication_effect.o
-CPPOBJS += movit/padding_effect.o
-
-# Movit MLT services
 CPPOBJS += filter_movit_blur.o
 CPPOBJS += filter_movit_convert.o
 CPPOBJS += filter_deconvolution_sharpen.o
@@ -69,9 +36,14 @@ else
 endif
 endif
 
-CXXFLAGS += $(CFLAGS) -Wno-deprecated
+CXXFLAGS += -Wno-deprecated $(CFLAGS)
+CXXFLAGS += `pkg-config --cflags movit 2> /dev/null`
+
+SHADERDIR = `pkg-config --variable=shaderdir movit`
+CXXFLAGS += -DSHADERDIR=\"$(SHADERDIR)\"
 
 LDFLAGS += -L../../mlt++ -lmlt++
+LDFLAGS += `pkg-config --libs movit 2> /dev/null`
 
 SRCS := $(OBJS:.o=.c) $(CPPOBJS:.o=.cpp)
 

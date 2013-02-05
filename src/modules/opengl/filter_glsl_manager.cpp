@@ -18,10 +18,11 @@
  * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
+#include <stdlib.h>
 #include <string>
 #include "glsl_manager.h"
-#include "movit/init.h"
-#include "movit/effect_chain.h"
+#include <movit/init.h>
+#include <movit/effect_chain.h>
 #include "mlt_movit_input.h"
 
 extern "C" {
@@ -35,6 +36,7 @@ extern "C" {
 #include <unistd.h>
 #include <sys/syscall.h>
 #endif
+
 
 GlslManager::GlslManager()
 	: Mlt::Filter( mlt_filter_new() )
@@ -168,11 +170,21 @@ glsl_pbo GlslManager::get_pbo(int size)
 	return pbo;
 }
 
+std::string get_movit_path()
+{
+}
+
 void GlslManager::onInit( mlt_properties owner, GlslManager* filter )
 {
 	mlt_log_verbose( filter->get_service(), "%s: %d\n", __FUNCTION__, syscall(SYS_gettid) );
-	::init_movit( std::string(mlt_environment( "MLT_DATA" )).append("/opengl/movit"),
-		mlt_log_get_level() == MLT_LOG_DEBUG? MOVIT_DEBUG_ON : MOVIT_DEBUG_OFF );
+#ifdef WIN32
+	std::string path = std::string(mlt_environment("MLT_APPDIR")).append("\\share\\movit");
+#elif defined(__DARWIN__) && defined(RELOCATABLE)
+	std::string path = std::string(mlt_environment("MLT_APPDIR")).append("/share/movit");
+#else
+	std::string path = std::string(getenv("MLT_MOVIT_PATH") ? getenv("MLT_MOVIT_PATH") : SHADERDIR);
+#endif
+	::init_movit( path, mlt_log_get_level() == MLT_LOG_DEBUG? MOVIT_DEBUG_ON : MOVIT_DEBUG_OFF );
 	filter->set( "glsl_supported", movit_initialized );
 }
 

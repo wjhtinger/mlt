@@ -19,6 +19,7 @@
 
 #include <framework/mlt.h>
 #include <string.h>
+#include <math.h>
 #include <assert.h>
 
 #include "glsl_manager.h"

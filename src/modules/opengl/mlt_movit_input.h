@@ -20,9 +20,9 @@
 #ifndef MLT_MOVIT_INPUT_H
 #define MLT_MOVIT_INPUT_H
 
-#include "movit/flat_input.h"
-#include "movit/ycbcr_input.h"
-#include "movit/effect_chain.h"
+#include <movit/flat_input.h>
+#include <movit/ycbcr_input.h>
+#include <movit/effect_chain.h>
 
 class MltInput : public Input
 {

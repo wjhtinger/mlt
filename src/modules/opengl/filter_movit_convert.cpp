@@ -19,10 +19,12 @@
 
 #include <framework/mlt.h>
 #include <string.h>
+#include <stdlib.h>
 #include <assert.h>
 
 #include "glsl_manager.h"
-#include "movit/effect_chain.h"
+#include <movit/effect_chain.h>
+#include <movit/util.h>
 #include "mlt_movit_input.h"
 
 

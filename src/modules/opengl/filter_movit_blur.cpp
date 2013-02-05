@@ -22,8 +22,7 @@
 #include <assert.h>
 
 #include "glsl_manager.h"
-#include "movit/init.h"
-#include "movit/blur_effect.h"
+#include <movit/blur_effect.h>
 
 static mlt_frame process( mlt_filter filter, mlt_frame frame )
 {
