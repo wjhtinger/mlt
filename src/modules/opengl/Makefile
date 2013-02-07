@@ -8,7 +8,8 @@ TARGET = ../libmltopengl$(LIBSUF)
 
 OBJS = factory.o
 
-CPPOBJS = filter_glsl_manager.o
+CPPOBJS = fbo_input.o
+CPPOBJS += filter_glsl_manager.o
 CPPOBJS += filter_movit_blur.o
 CPPOBJS += filter_movit_convert.o
 CPPOBJS += filter_deconvolution_sharpen.o
