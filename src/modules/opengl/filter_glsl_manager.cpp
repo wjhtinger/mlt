@@ -24,6 +24,7 @@
 #include <movit/init.h>
 #include <movit/effect_chain.h>
 #include "mlt_movit_input.h"
+#include "mlt_flip_effect.h"
 
 extern "C" {
 #include <framework/mlt_factory.h>
@@ -182,21 +183,6 @@ void GlslManager::onInit( mlt_properties owner, GlslManager* filter )
 #endif
 	::init_movit( path, mlt_log_get_level() == MLT_LOG_DEBUG? MOVIT_DEBUG_ON : MOVIT_DEBUG_OFF );
 	filter->set( "glsl_supported", movit_initialized );
-}
-
-namespace Mlt
-{
-class VerticalFlip : public Effect {
-public:
-	VerticalFlip() {}
-	virtual std::string effect_type_id() const { return "MltVerticalFlip"; }
-	std::string output_fragment_shader() {
-		return "vec4 FUNCNAME(vec2 tc) { tc.y = 1.0 - tc.y; return INPUT(tc); }\n";
-	}
-	virtual bool needs_linear_light() const { return false; }
-	virtual bool needs_srgb_primaries() const { return false; }
-	AlphaHandling alpha_handling() const { return DONT_CARE_ALPHA_TYPE; }
-};
 }
 
 extern "C" {
