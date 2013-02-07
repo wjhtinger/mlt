@@ -84,8 +84,9 @@ static int convert_image( mlt_frame frame, uint8_t **image, mlt_image_format *fo
 	int height = mlt_properties_get_int( properties, "height" );
 	int img_size = mlt_image_format_size( *format, width, height, NULL );
 	mlt_producer producer = mlt_producer_cut_parent( mlt_frame_get_original_producer( frame ) );
-	EffectChain* chain = GlslManager::get_chain( producer );
-	MltInput* input = GlslManager::get_input( producer );
+	mlt_service service = MLT_PRODUCER_SERVICE(producer);
+	EffectChain* chain = GlslManager::get_chain( service );
+	MltInput* input = GlslManager::get_input( service );
 
 	// Use a temporary chain to convert image in RAM to OpenGL texture.
 	if ( output_format == mlt_image_glsl_texture && *format != mlt_image_glsl ) {
@@ -174,8 +175,8 @@ static int convert_image( mlt_frame frame, uint8_t **image, mlt_image_format *fo
 
 			// Using a temporary chain to convert image in RAM to OpenGL texture.
 			if ( *format != mlt_image_glsl )
-				GlslManager::reset_finalized( producer );
-			GlslManager::render( producer, chain, fbo->fbo, width, height );
+				GlslManager::reset_finalized( service );
+			GlslManager::render( service, chain, fbo->fbo, width, height );
 
 			glFinish();
 			check_error();
@@ -210,7 +211,7 @@ static int convert_image( mlt_frame frame, uint8_t **image, mlt_image_format *fo
 				glBindFramebuffer( GL_FRAMEBUFFER, 0 );
 				check_error();
 
-				GlslManager::render( producer, chain, fbo->fbo, width, height );
+				GlslManager::render( service, chain, fbo->fbo, width, height );
 	
 				// Read FBO into PBO
 				glBindBuffer( GL_PIXEL_PACK_BUFFER_ARB, pbo->pbo );

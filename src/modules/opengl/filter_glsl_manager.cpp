@@ -200,14 +200,14 @@ static void deleteChain( EffectChain* chain )
 	delete chain;
 }
 
-bool GlslManager::init_chain( mlt_producer producer )
+bool GlslManager::init_chain( mlt_service service )
 {
 	bool error = true;
-	mlt_properties properties = MLT_PRODUCER_PROPERTIES( producer );
+	mlt_properties properties = MLT_SERVICE_PROPERTIES( service );
 	EffectChain* chain = (EffectChain*) mlt_properties_get_data( properties, "movit chain", NULL );
 	if ( !chain ) {
-		mlt_profile profile = mlt_service_profile( MLT_PRODUCER_SERVICE( producer ) );
-		MltInput* input = new MltInput( profile->width, profile->height );
+		mlt_profile profile = mlt_service_profile( service );
+		Input* input = new MltInput( profile->width, profile->height );
 		chain = new EffectChain( profile->display_aspect_num, profile->display_aspect_den );
 		chain->add_input( input );
 		mlt_properties_set_data( properties, "movit chain", chain, 0, (mlt_destructor) deleteChain, NULL );
@@ -218,19 +218,19 @@ bool GlslManager::init_chain( mlt_producer producer )
 	return error;
 }
 
-EffectChain* GlslManager::get_chain( mlt_producer producer )
+EffectChain* GlslManager::get_chain( mlt_service service )
 {
-	return (EffectChain*) mlt_properties_get_data( MLT_PRODUCER_PROPERTIES(producer), "movit chain", NULL );
+	return (EffectChain*) mlt_properties_get_data( MLT_SERVICE_PROPERTIES(service), "movit chain", NULL );
 }
 
-MltInput *GlslManager::get_input( mlt_producer producer )
+MltInput *GlslManager::get_input( mlt_service service )
 {
-	return (MltInput*) mlt_properties_get_data( MLT_PRODUCER_PROPERTIES(producer), "movit input", NULL );
+	return (MltInput*) mlt_properties_get_data( MLT_SERVICE_PROPERTIES(service), "movit input", NULL );
 }
 
-void GlslManager::reset_finalized( mlt_producer producer )
+void GlslManager::reset_finalized( mlt_service service )
 {
-	mlt_properties_set_int( MLT_PRODUCER_PROPERTIES(producer), "_movit finalized", 0 );
+	mlt_properties_set_int( MLT_SERVICE_PROPERTIES(service), "_movit finalized", 0 );
 }
 
 Effect* GlslManager::get_effect( mlt_filter filter, mlt_frame frame )
@@ -252,10 +252,10 @@ Effect* GlslManager::add_effect( mlt_filter filter, mlt_frame frame, Effect* eff
 	return effect;
 }
 
-void GlslManager::render( mlt_producer producer, void* chain, GLuint fbo, int width, int height )
+void GlslManager::render( mlt_service service, void* chain, GLuint fbo, int width, int height )
 {
 	EffectChain* effect_chain = (EffectChain*) chain;
-	mlt_properties properties = MLT_PRODUCER_PROPERTIES( producer );
+	mlt_properties properties = MLT_SERVICE_PROPERTIES( service );
 	if ( !mlt_properties_get_int( properties, "_movit finalized" ) ) {
 		mlt_properties_set_int( properties, "_movit finalized", 1 );
 		effect_chain->add_effect( new Mlt::VerticalFlip() );

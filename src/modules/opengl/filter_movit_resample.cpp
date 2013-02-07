@@ -89,7 +89,7 @@ static int get_image( mlt_frame frame, uint8_t **image, mlt_image_format *format
 static mlt_frame process( mlt_filter filter, mlt_frame frame )
 {
 	mlt_producer producer = mlt_producer_cut_parent( mlt_frame_get_original_producer( frame ) );
-	if ( !GlslManager::init_chain( producer ) ) {
+	if ( !GlslManager::init_chain( MLT_PRODUCER_SERVICE(producer) ) ) {
 		GlslManager::add_effect( filter, frame, new ResampleEffect() );
 	}
 	mlt_frame_push_service( frame, filter );

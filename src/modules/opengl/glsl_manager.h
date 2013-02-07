@@ -80,13 +80,13 @@ public:
 	static void release_texture(glsl_texture);
 	glsl_pbo get_pbo(int size);
 
-	static bool init_chain(mlt_producer);
-	static EffectChain* get_chain(mlt_producer);
-	static MltInput* get_input(mlt_producer);
-	static void reset_finalized(mlt_producer);
+	static bool init_chain(mlt_service);
+	static EffectChain* get_chain(mlt_service);
+	static MltInput* get_input(mlt_service);
+	static void reset_finalized(mlt_service);
 	static Effect* get_effect(mlt_filter, mlt_frame);
 	static Effect* add_effect(mlt_filter, mlt_frame, Effect*);
-	static void render(mlt_producer, void *chain, GLuint fbo, int width, int height);
+	static void render(mlt_service, void *chain, GLuint fbo, int width, int height);
 
 private:
 	static void onInit( mlt_properties owner, GlslManager* filter );
