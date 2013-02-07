@@ -167,7 +167,7 @@ static int convert_image( mlt_frame frame, uint8_t **image, mlt_image_format *fo
 
 			glBindFramebuffer( GL_FRAMEBUFFER, fbo->fbo );
 			check_error();
-			glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE_ARB, texture->texture, 0 );
+			glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture->texture, 0 );
 			check_error();
 			glBindFramebuffer( GL_FRAMEBUFFER, 0 );
 			check_error();
@@ -205,7 +205,7 @@ static int convert_image( mlt_frame frame, uint8_t **image, mlt_image_format *fo
 				// Set the FBO
 				glBindFramebuffer( GL_FRAMEBUFFER, fbo->fbo );
 				check_error();
-				glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE_ARB, texture->texture, 0 );
+				glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture->texture, 0 );
 				check_error();
 				glBindFramebuffer( GL_FRAMEBUFFER, 0 );
 				check_error();
@@ -242,7 +242,7 @@ static int convert_image( mlt_frame frame, uint8_t **image, mlt_image_format *fo
 				check_error();
 				glBindFramebuffer( GL_FRAMEBUFFER, 0 );
 				check_error();
-				glBindTexture( GL_TEXTURE_RECTANGLE_ARB, 0 );
+				glBindTexture( GL_TEXTURE_2D, 0 );
 				check_error();
 				GlslManager::release_texture( texture );
 	

@@ -131,13 +131,7 @@ static void update()
 {
 	int _width = GLWin.width;
 	int _height = GLWin.height;
-	GLfloat left, right, top, bottom, u, u1, v, v1;
-
-	u = 0.0;
-	v = 0.0;
-	u1 = fb.width;
-	v1 = fb.height;
-
+	GLfloat left, right, top, bottom;
 	GLfloat war = (GLfloat)_width/(GLfloat)_height;
 
 	if ( war < new_frame.aspect_ratio ) {
@@ -161,17 +155,13 @@ static void update()
 	glTranslatef( _width/2, _height/2, 0 );
 	glScalef( _width/2, _height/2, 1.0 );
 
-	glBindTexture( GL_TEXTURE_RECTANGLE_ARB, fb.texture );
+	glBindTexture( GL_TEXTURE_2D, fb.texture );
 
 	glBegin( GL_QUADS );
-		glTexCoord2f( u, v );
-		glVertex3f( left, top, 0.);
-		glTexCoord2f( u, v1 );
-		glVertex3f( left, bottom, 0.);
-		glTexCoord2f( u1, v1 );
-		glVertex3f( right, bottom, 0.);
-		glTexCoord2f( u1, v );
-		glVertex3f( right, top, 0.);
+		glTexCoord2f( 0.0f, 0.0f ); glVertex2f( left, top );
+		glTexCoord2f( 0.0f, 1.0f ); glVertex2f( left, bottom );
+		glTexCoord2f( 1.0f, 1.0f ); glVertex2f( right, bottom );
+		glTexCoord2f( 1.0f, 0.0f ); glVertex2f( right, top );
 	glEnd();
 
 	glPopMatrix();
@@ -198,14 +188,14 @@ static void show_frame()
 		fb.height = new_frame.height;
 		glGenFramebuffers( 1, &fb.fbo );
 		glGenTextures( 1, &fb.texture );
-		glBindTexture( GL_TEXTURE_RECTANGLE_ARB, fb.texture );
-		glTexImage2D( GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, fb.width, fb.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL );
-		glTexParameterf( GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
-		glTexParameterf( GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
-		glTexParameteri( GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-		glTexParameteri( GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+		glBindTexture( GL_TEXTURE_2D, fb.texture );
+		glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, fb.width, fb.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL );
+		glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+		glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 		glBindFramebuffer( GL_FRAMEBUFFER, fb.fbo );
-		glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE_ARB, fb.texture, 0 );
+		glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fb.texture, 0 );
 		glBindFramebuffer( GL_FRAMEBUFFER, 0 );
 	}
 
@@ -223,13 +213,13 @@ static void show_frame()
 	glLoadIdentity();
 
 	glActiveTexture( GL_TEXTURE0 );
-    glBindTexture( GL_TEXTURE_RECTANGLE_ARB, new_frame.texture );
+    glBindTexture( GL_TEXTURE_2D, new_frame.texture );
 
 	glBegin( GL_QUADS );
-		glTexCoord2f( 0.0, 0.0 );							glVertex3f( 0.0, 0.0, 0.);
-		glTexCoord2f( 0.0, new_frame.height );				glVertex3f( 0.0, new_frame.height, 0.);
-		glTexCoord2f( new_frame.width, new_frame.height );	glVertex3f( new_frame.width, new_frame.height, 0.);
-		glTexCoord2f( new_frame.width, 0.0 );				glVertex3f( new_frame.width, 0.0, 0.);
+		glTexCoord2f( 0.0f, 0.0f ); glVertex2f( 0.0f, 0.0f );
+		glTexCoord2f( 0.0f, 1.0f ); glVertex2f( 0.0f, new_frame.height );
+		glTexCoord2f( 1.0f, 1.0f ); glVertex2f( new_frame.width, new_frame.height );
+		glTexCoord2f( 1.0f, 0.0f ); glVertex2f( new_frame.width, 0.0f );
 	glEnd();
 
 	glBindFramebuffer( GL_FRAMEBUFFER, 0 );
@@ -353,7 +343,7 @@ static void initGL( void )
 	glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
 	glEnable( GL_BLEND );
 	glShadeModel( GL_SMOOTH );
-	glEnable( GL_TEXTURE_RECTANGLE_ARB );
+	glEnable( GL_TEXTURE_2D );
 	glHint( GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST );
 
 	typedef int (*GLXSWAPINTERVALSGI) ( int );
@@ -366,14 +356,14 @@ static void initGL( void )
 	fb.height = STARTHEIGHT;
 	glGenFramebuffers( 1, &fb.fbo );
 	glGenTextures( 1, &fb.texture );
-	glBindTexture( GL_TEXTURE_RECTANGLE_ARB, fb.texture );
-	glTexImage2D( GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA, fb.width, fb.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL );
-	glTexParameterf( GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
-    glTexParameterf( GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
-	glTexParameteri( GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-    glTexParameteri( GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+	glBindTexture( GL_TEXTURE_2D, fb.texture );
+	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, fb.width, fb.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL );
+	glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+    glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 	glBindFramebuffer( GL_FRAMEBUFFER, fb.fbo );
-	glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE_ARB, fb.texture, 0 );
+	glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fb.texture, 0 );
 	glBindFramebuffer( GL_FRAMEBUFFER, 0 );
 	
 	resizeGLScene();

@@ -106,10 +106,10 @@ glsl_texture GlslManager::get_texture(int width, int height, GLint internal_form
 	for (int i = 0; i < texture_list.count(); ++i) {
 		glsl_texture tex = (glsl_texture) texture_list.peek(i);
 		if (!tex->used && (tex->width == width) && (tex->height == height) && (tex->internal_format == internal_format)) {
-			glBindTexture(GL_TEXTURE_RECTANGLE_ARB, tex->texture);
-			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-			glBindTexture( GL_TEXTURE_RECTANGLE_ARB, 0);
+			glBindTexture(GL_TEXTURE_2D, tex->texture);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			glBindTexture( GL_TEXTURE_2D, 0);
 			tex->used = 1;
 			return tex;
 		}
@@ -124,13 +124,13 @@ glsl_texture GlslManager::get_texture(int width, int height, GLint internal_form
 		glDeleteTextures(1, &tex);
 		return NULL;
 	}
-	glBindTexture( GL_TEXTURE_RECTANGLE_ARB, tex );
-	glTexImage2D( GL_TEXTURE_RECTANGLE_ARB, 0, internal_format, width, height, 0, internal_format, GL_UNSIGNED_BYTE, NULL );
-    glTexParameterf( GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
-    glTexParameterf( GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
-    glTexParameteri( GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
-    glTexParameteri( GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
-    glBindTexture( GL_TEXTURE_RECTANGLE_ARB, 0 );
+	glBindTexture( GL_TEXTURE_2D, tex );
+	glTexImage2D( GL_TEXTURE_2D, 0, internal_format, width, height, 0, internal_format, GL_UNSIGNED_BYTE, NULL );
+    glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+    glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+    glBindTexture( GL_TEXTURE_2D, 0 );
 
 	gtex->texture = tex;
 	gtex->width = width;
@@ -168,10 +168,6 @@ glsl_pbo GlslManager::get_pbo(int size)
 		pbo->size = size;
 	}
 	return pbo;
-}
-
-std::string get_movit_path()
-{
 }
 
 void GlslManager::onInit( mlt_properties owner, GlslManager* filter )
@@ -226,7 +222,7 @@ bool GlslManager::init_chain( mlt_producer producer )
 	if ( !chain ) {
 		mlt_profile profile = mlt_service_profile( MLT_PRODUCER_SERVICE( producer ) );
 		MltInput* input = new MltInput( profile->width, profile->height );
-		chain = new EffectChain( mlt_profile_dar( profile ), 1.0f );
+		chain = new EffectChain( profile->display_aspect_num, profile->display_aspect_den );
 		chain->add_input( input );
 		mlt_properties_set_data( properties, "movit chain", chain, 0, (mlt_destructor) deleteChain, NULL );
 		mlt_properties_set_data( properties, "movit input", input, 0, NULL, NULL );
