@@ -117,11 +117,6 @@ void MltInput::useFBOInput(EffectChain *chain, GLuint texture)
 		FBOInput* fboInput = new FBOInput(m_width, m_height);
 		input = fboInput;
 		fboInput->set_texture(texture);
-		ImageFormat output_format;
-		output_format.color_space = COLORSPACE_sRGB;
-		output_format.gamma_curve = GAMMA_sRGB;
-		chain->add_output(output_format, OUTPUT_ALPHA_FORMAT_POSTMULTIPLIED);
-		chain->set_dither_bits(8);
 	}
 }
 
