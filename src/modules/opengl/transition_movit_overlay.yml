@@ -1,6 +1,6 @@
 schema_version: 0.1
 type: transition
-identifier: movit.mix
+identifier: movit.overlay
 title: Dissolve (GLSL)
 version: 1
 copyright: Dan Dennedy
