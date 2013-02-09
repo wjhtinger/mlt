@@ -1,5 +1,5 @@
 /*
- * transition_movit_mix.cpp
+ * transition_movit_overlay.cpp
  * Copyright (C) 2013 Dan Dennedy <dan@dennedy.org>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -26,7 +26,7 @@
 #include <movit/init.h>
 #include <movit/effect_chain.h>
 #include <movit/util.h>
-#include <movit/mix_effect.h>
+#include <movit/overlay_effect.h>
 #include "mlt_movit_input.h"
 #include "mlt_flip_effect.h"
 
@@ -53,18 +53,6 @@ static int get_image( mlt_frame a_frame, uint8_t **image, mlt_image_format *form
 	MltInput* a_input = GlslManager::get_input( service );
 	MltInput* b_input = (MltInput*) mlt_properties_get_data( properties, "movit input B", NULL );
 	mlt_image_format output_format = *format;
-
-	// Get the transition parameters
-	int reverse = mlt_properties_get_int( properties, "reverse" );
-	double mix = mlt_properties_get( properties, "mix" ) ?
-		mlt_properties_get_double( properties, "mix" ) :
-		mlt_transition_get_progress( transition, a_frame );
-	double inverse = 1.0 - mix;
-
-	// Set the movit parameters
-	bool ok = effect->set_float( "strength_first",  reverse ? mix : inverse );
-	ok     |= effect->set_float( "strength_second", reverse ? inverse : mix );
-	assert( ok );
 
 	// Get the frames' textures
 	GLuint* texture_id[2] = {0, 0};
@@ -178,7 +166,7 @@ static mlt_frame process( mlt_transition transition, mlt_frame a_frame, mlt_fram
 		chain->add_output( output_format, OUTPUT_ALPHA_FORMAT_POSTMULTIPLIED );
 		chain->set_dither_bits( 8 );
 
-		Effect* effect = chain->add_effect( new MixEffect(),
+		Effect* effect = chain->add_effect( new OverlayEffect(),
 			GlslManager::get_input( service ), b_input );
 
 		// Save these new effects on properties for get_image
@@ -200,13 +188,12 @@ static mlt_frame process( mlt_transition transition, mlt_frame a_frame, mlt_fram
 }
 
 extern "C"
-mlt_transition transition_movit_mix_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg )
+mlt_transition transition_movit_overlay_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg )
 {
 	mlt_transition transition = NULL;
 	GlslManager* glsl = GlslManager::get_instance();
 	if ( glsl && ( transition = mlt_transition_new() ) ) {
 		transition->process = process;
-		mlt_properties_set( MLT_TRANSITION_PROPERTIES( transition ), "mix", arg );
 		
 		// Inform apps and framework that this is a video only transition
 		mlt_properties_set_int( MLT_TRANSITION_PROPERTIES( transition ), "_transition_type", 1 );

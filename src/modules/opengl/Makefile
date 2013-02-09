@@ -24,6 +24,7 @@ CPPOBJS += filter_movit_vignette.o
 CPPOBJS += filter_white_balance.o
 CPPOBJS += mlt_movit_input.o
 CPPOBJS += transition_movit_mix.o
+CPPOBJS += transition_movit_overlay.o
 
 ifeq ($(targetos), MinGW)
 	CFLAGS  += -DGLEW_STATIC
