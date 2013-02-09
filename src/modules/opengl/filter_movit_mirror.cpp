@@ -26,9 +26,11 @@
 
 static mlt_frame process( mlt_filter filter, mlt_frame frame )
 {
-	Effect* effect = GlslManager::get_effect( filter, frame );
-	if ( !effect )
-		GlslManager::add_effect( filter, frame, new MirrorEffect() );
+	if ( !mlt_frame_is_test_card( frame ) ) {
+		Effect* effect = GlslManager::get_effect( filter, frame );
+		if ( !effect )
+			GlslManager::add_effect( filter, frame, new MirrorEffect() );
+	}
 	return frame;
 }
 

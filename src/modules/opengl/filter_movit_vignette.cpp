@@ -26,15 +26,17 @@
 
 static mlt_frame process( mlt_filter filter, mlt_frame frame )
 {
-	Effect* effect = GlslManager::get_effect( filter, frame );
-	if ( !effect ) {
-		effect = GlslManager::add_effect( filter, frame, new VignetteEffect() );
-	}
-	if ( effect ) {
-		mlt_properties filter_props = MLT_FILTER_PROPERTIES( filter );
-		bool ok = effect->set_float( "radius", mlt_properties_get_double( filter_props, "radius" ) );
-		ok |= effect->set_float( "inner_radius", mlt_properties_get_double( filter_props, "inner_radius" ) );
-		assert(ok);
+	if ( !mlt_frame_is_test_card( frame ) ) {
+		Effect* effect = GlslManager::get_effect( filter, frame );
+		if ( !effect ) {
+			effect = GlslManager::add_effect( filter, frame, new VignetteEffect() );
+		}
+		if ( effect ) {
+			mlt_properties filter_props = MLT_FILTER_PROPERTIES( filter );
+			bool ok = effect->set_float( "radius", mlt_properties_get_double( filter_props, "radius" ) );
+			ok |= effect->set_float( "inner_radius", mlt_properties_get_double( filter_props, "inner_radius" ) );
+			assert(ok);
+		}
 	}
 	return frame;
 }

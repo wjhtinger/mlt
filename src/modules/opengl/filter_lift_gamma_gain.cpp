@@ -26,26 +26,28 @@
 
 static mlt_frame process( mlt_filter filter, mlt_frame frame )
 {
-	Effect* effect = GlslManager::get_effect( filter, frame );
-	if ( !effect )
-		effect = GlslManager::add_effect( filter, frame, new LiftGammaGainEffect );
-	if ( effect ) {
-		mlt_properties filter_props = MLT_FILTER_PROPERTIES( filter );
-		RGBTriplet triplet(
-			mlt_properties_get_double( filter_props, "lift_r" ),
-			mlt_properties_get_double( filter_props, "lift_g" ),
-			mlt_properties_get_double( filter_props, "lift_b" )
-		);
-		bool ok = effect->set_vec3( "lift", (float*) &triplet );
-		triplet.r = mlt_properties_get_double( filter_props, "gamma_r" );
-		triplet.g = mlt_properties_get_double( filter_props, "gamma_g" );
-		triplet.b = mlt_properties_get_double( filter_props, "gamma_b" );
-		ok |= effect->set_vec3( "gamma", (float*) &triplet );
-		triplet.r = mlt_properties_get_double( filter_props, "gain_r" );
-		triplet.g = mlt_properties_get_double( filter_props, "gain_g" );
-		triplet.b = mlt_properties_get_double( filter_props, "gain_b" );
-		ok |= effect->set_vec3( "gain", (float*) &triplet );
-		assert(ok);
+	if ( !mlt_frame_is_test_card( frame ) ) {
+		Effect* effect = GlslManager::get_effect( filter, frame );
+		if ( !effect )
+			effect = GlslManager::add_effect( filter, frame, new LiftGammaGainEffect );
+		if ( effect ) {
+			mlt_properties filter_props = MLT_FILTER_PROPERTIES( filter );
+			RGBTriplet triplet(
+				mlt_properties_get_double( filter_props, "lift_r" ),
+				mlt_properties_get_double( filter_props, "lift_g" ),
+				mlt_properties_get_double( filter_props, "lift_b" )
+			);
+			bool ok = effect->set_vec3( "lift", (float*) &triplet );
+			triplet.r = mlt_properties_get_double( filter_props, "gamma_r" );
+			triplet.g = mlt_properties_get_double( filter_props, "gamma_g" );
+			triplet.b = mlt_properties_get_double( filter_props, "gamma_b" );
+			ok |= effect->set_vec3( "gamma", (float*) &triplet );
+			triplet.r = mlt_properties_get_double( filter_props, "gain_r" );
+			triplet.g = mlt_properties_get_double( filter_props, "gain_g" );
+			triplet.b = mlt_properties_get_double( filter_props, "gain_b" );
+			ok |= effect->set_vec3( "gain", (float*) &triplet );
+			assert(ok);
+		}
 	}
 	return frame;
 }

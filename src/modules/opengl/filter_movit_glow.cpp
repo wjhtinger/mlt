@@ -26,15 +26,17 @@
 
 static mlt_frame process( mlt_filter filter, mlt_frame frame )
 {
-	Effect* effect = GlslManager::get_effect( filter, frame );
-	if ( !effect )
-		effect = GlslManager::add_effect( filter, frame, new GlowEffect() );
-	if ( effect ) {
-		mlt_properties filter_props = MLT_FILTER_PROPERTIES( filter );
-		bool ok = effect->set_float( "radius", mlt_properties_get_double( filter_props, "radius" ) );
-		ok |= effect->set_float( "blurred_mix_amount", mlt_properties_get_double( filter_props, "blur_mix" ) );
-		ok |= effect->set_float( "highlight_cutoff", mlt_properties_get_double( filter_props, "highlight_cutoff" ) );
-		assert(ok);
+	if ( !mlt_frame_is_test_card( frame ) ) {
+		Effect* effect = GlslManager::get_effect( filter, frame );
+		if ( !effect )
+			effect = GlslManager::add_effect( filter, frame, new GlowEffect() );
+		if ( effect ) {
+			mlt_properties filter_props = MLT_FILTER_PROPERTIES( filter );
+			bool ok = effect->set_float( "radius", mlt_properties_get_double( filter_props, "radius" ) );
+			ok |= effect->set_float( "blurred_mix_amount", mlt_properties_get_double( filter_props, "blur_mix" ) );
+			ok |= effect->set_float( "highlight_cutoff", mlt_properties_get_double( filter_props, "highlight_cutoff" ) );
+			assert(ok);
+		}
 	}
 	return frame;
 }

@@ -26,13 +26,15 @@
 
 static mlt_frame process( mlt_filter filter, mlt_frame frame )
 {
-	Effect* effect = GlslManager::get_effect( filter, frame );
-	if ( !effect )
-		effect = GlslManager::add_effect( filter, frame, new SaturationEffect() );
-	if ( effect ) {
-		mlt_properties filter_props = MLT_FILTER_PROPERTIES( filter );
-		bool ok = effect->set_float( "saturation", mlt_properties_get_double( filter_props, "saturation" ) );
-		assert(ok);
+	if ( !mlt_frame_is_test_card( frame ) ) {
+		Effect* effect = GlslManager::get_effect( filter, frame );
+		if ( !effect )
+			effect = GlslManager::add_effect( filter, frame, new SaturationEffect() );
+		if ( effect ) {
+			mlt_properties filter_props = MLT_FILTER_PROPERTIES( filter );
+			bool ok = effect->set_float( "saturation", mlt_properties_get_double( filter_props, "saturation" ) );
+			assert(ok);
+		}
 	}
 	return frame;
 }

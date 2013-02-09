@@ -26,20 +26,22 @@
 
 static mlt_frame process( mlt_filter filter, mlt_frame frame )
 {
-	Effect* effect = GlslManager::get_effect( filter, frame );
-	if ( !effect )
-		effect = GlslManager::add_effect( filter, frame, new WhiteBalanceEffect );
-	if ( effect ) {
-		mlt_properties filter_props = MLT_FILTER_PROPERTIES( filter );
-		int color_int = mlt_properties_get_int( filter_props, "neutral_color" );
-		RGBTriplet color(
-			float((color_int >> 24) & 0xff) / 255.0f,
-			float((color_int >> 16) & 0xff) / 255.0f,
-			float((color_int >> 8) & 0xff) / 255.0f
-		);
-		bool ok = effect->set_vec3( "neutral_color", (float*) &color );
-		ok |= effect->set_float( "output_color_temperature", mlt_properties_get_double( filter_props, "color_temperature" ) );
-		assert(ok);
+	if ( !mlt_frame_is_test_card( frame ) ) {
+		Effect* effect = GlslManager::get_effect( filter, frame );
+		if ( !effect )
+			effect = GlslManager::add_effect( filter, frame, new WhiteBalanceEffect );
+		if ( effect ) {
+			mlt_properties filter_props = MLT_FILTER_PROPERTIES( filter );
+			int color_int = mlt_properties_get_int( filter_props, "neutral_color" );
+			RGBTriplet color(
+				float((color_int >> 24) & 0xff) / 255.0f,
+				float((color_int >> 16) & 0xff) / 255.0f,
+				float((color_int >> 8) & 0xff) / 255.0f
+			);
+			bool ok = effect->set_vec3( "neutral_color", (float*) &color );
+			ok |= effect->set_float( "output_color_temperature", mlt_properties_get_double( filter_props, "color_temperature" ) );
+			assert(ok);
+		}
 	}
 	return frame;
 }
