@@ -1,5 +1,5 @@
 /*
- * filter_movit_resample.cpp
+ * filter_movit_crop.cpp
  * Copyright (C) 2013 Dan Dennedy <dan@dennedy.org>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -22,52 +22,59 @@
 #include <assert.h>
 
 #include "glsl_manager.h"
-#include <movit/resample_effect.h>
+#include <movit/padding_effect.h>
 
 static int get_image( mlt_frame frame, uint8_t **image, mlt_image_format *format, int *width, int *height, int writable )
 {
 	int error = 0;
 	mlt_properties properties = MLT_FRAME_PROPERTIES( frame );
 	mlt_filter filter = (mlt_filter) mlt_frame_pop_service( frame );
-	mlt_properties filter_properties = MLT_FILTER_PROPERTIES( filter );
 	mlt_profile profile = mlt_service_profile( MLT_FILTER_SERVICE( filter ) );
 
 	// Correct width/height if necessary
+	*width = mlt_properties_get_int( properties, "crop.original_width" );
+	*height = mlt_properties_get_int( properties, "crop.original_height" );
+	if ( *width == 0 || *height == 0 )
+	{
+		*width = mlt_properties_get_int( properties, "meta.media.width" );
+		*height = mlt_properties_get_int( properties, "meta.media.height" );
+	}
 	if ( *width == 0 || *height == 0 )
 	{
 		*width = profile->width;
 		*height = profile->height;
 	}
-
-	int iwidth = *width;
-	int iheight = *height;
-	double factor = mlt_properties_get_double( filter_properties, "factor" );
-	factor = factor > 0 ? factor : 1.0;
-	int owidth = *width * factor;
-	int oheight = *height * factor;
-
-	// If meta.media.width/height exist, we want that as minimum information
-	if ( mlt_properties_get_int( properties, "meta.media.width" ) )
-	{
-		iwidth = mlt_properties_get_int( properties, "meta.media.width" );
-		iheight = mlt_properties_get_int( properties, "meta.media.height" );
-	}
-
 	mlt_properties_set_int( properties, "rescale_width", *width );
 	mlt_properties_set_int( properties, "rescale_height", *height );
 
-	// Deinterlace if height is changing to prevent fields mixing on interpolation
-	if ( iheight != oheight )
-		mlt_properties_set_int( properties, "consumer_deinterlace", 1 );
-
 	// Get the image as requested
-	*format = mlt_image_glsl;
-	error = mlt_frame_get_image( frame, image, format, &iwidth, &iheight, writable );
+//	*format = (mlt_image_format) mlt_properties_get_int( MLT_PRODUCER_PROPERTIES(producer), "_movit image_format" );
+	*format = mlt_image_none;
+	error = mlt_frame_get_image( frame, image, format, width, height, writable );
+
+	if ( !error && *format != mlt_image_glsl && frame->convert_image ) {
+	// Pin the requested format to the first one returned.
+//		mlt_properties_set_int( MLT_PRODUCER_PROPERTIES(producer), "_movit image_format", *format );
+		error = frame->convert_image( frame, image, format, mlt_image_glsl );
+	}
 	if ( !error ) {
+		double left    = mlt_properties_get_double( properties, "crop.left" );
+		double right   = mlt_properties_get_double( properties, "crop.right" );
+		double top     = mlt_properties_get_double( properties, "crop.top" );
+		double bottom  = mlt_properties_get_double( properties, "crop.bottom" );
+		int owidth  = *width - left - right;
+		int oheight = *height - top - bottom;
+		owidth = owidth < 0 ? 0 : owidth;
+		oheight = oheight < 0 ? 0 : oheight;
+
+		mlt_log_debug( MLT_FILTER_SERVICE(filter), "%dx%d -> %dx%d\n", *width, *height, owidth, oheight);
+
 		Effect* effect = GlslManager::get_effect( filter, frame );
 		if ( effect ) {
 			bool ok = effect->set_int( "width", owidth );
 			ok |= effect->set_int( "height", oheight );
+			ok |= effect->set_float( "left", -left );
+			ok |= effect->set_float( "top", -top );
 			assert(ok);
 			*width = owidth;
 			*height = oheight;
@@ -79,15 +86,20 @@ static int get_image( mlt_frame frame, uint8_t **image, mlt_image_format *format
 
 static mlt_frame process( mlt_filter filter, mlt_frame frame )
 {
-	if ( !GlslManager::get_effect( filter, frame ) )
-		GlslManager::add_effect( filter, frame, new ResampleEffect );
+	mlt_producer producer = mlt_producer_cut_parent( mlt_frame_get_original_producer( frame ) );
+	if ( !GlslManager::init_chain( MLT_PRODUCER_SERVICE(producer) ) ) {
+		Effect* effect = GlslManager::add_effect( filter, frame, new PaddingEffect );
+		RGBATuple border_color( 0.0f, 0.0f, 0.0f, 1.0f );
+		bool ok = effect->set_vec4( "border_color", (float*) &border_color );
+		assert(ok);
+	}
 	mlt_frame_push_service( frame, filter );
 	mlt_frame_push_get_image( frame, get_image );
 	return frame;
 }
 
 extern "C"
-mlt_filter filter_movit_resample_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg )
+mlt_filter filter_movit_crop_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg )
 {
 	mlt_filter filter = NULL;
 	GlslManager* glsl = GlslManager::get_instance();

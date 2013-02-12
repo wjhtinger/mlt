@@ -12,6 +12,7 @@ CPPOBJS = fbo_input.o
 CPPOBJS += filter_glsl_manager.o
 CPPOBJS += filter_movit_blur.o
 CPPOBJS += filter_movit_convert.o
+CPPOBJS += filter_movit_crop.o
 CPPOBJS += filter_deconvolution_sharpen.o
 CPPOBJS += filter_movit_diffusion.o
 CPPOBJS += filter_movit_glow.o
