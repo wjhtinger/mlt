@@ -49,7 +49,6 @@ static int get_image( mlt_frame a_frame, uint8_t **image, mlt_image_format *form
 	// Get the movit objects
 	mlt_service service = MLT_TRANSITION_SERVICE( transition );
 	EffectChain* chain = GlslManager::get_chain( service );
-	Effect* effect = (Effect*) mlt_properties_get_data( properties, "movit effect", NULL );
 	MltInput* a_input = GlslManager::get_input( service );
 	MltInput* b_input = (MltInput*) mlt_properties_get_data( properties, "movit input B", NULL );
 	mlt_image_format output_format = *format;
@@ -169,10 +168,9 @@ static mlt_frame process( mlt_transition transition, mlt_frame a_frame, mlt_fram
 		Effect* effect = chain->add_effect( new OverlayEffect(),
 			GlslManager::get_input( service ), b_input );
 
-		// Save these new effects on properties for get_image
-		mlt_properties properties = MLT_TRANSITION_PROPERTIES(transition);
-		mlt_properties_set_data( properties, "movit effect", effect, 0, NULL, NULL );
-		mlt_properties_set_data( properties, "movit input B", b_input, 0, NULL, NULL );
+		// Save these new input on properties for get_image
+		mlt_properties_set_data( MLT_TRANSITION_PROPERTIES(transition),
+			"movit input B", b_input, 0, NULL, NULL );
 	}
 
 	// Push the transition on to the frame
