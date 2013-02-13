@@ -20,12 +20,57 @@
 #include <framework/mlt.h>
 #include <string.h>
 #include <math.h>
+#include <stdlib.h>
 #include <assert.h>
 
 #include "glsl_manager.h"
-#include "movit/init.h"
-#include "movit/effect_chain.h"
-#include "movit/padding_effect.h"
+#include <movit/init.h>
+#include <movit/padding_effect.h>
+
+static float alignment_parse( char* align )
+{
+	int ret = 0.0f;
+
+	if ( align == NULL );
+	else if ( isdigit( align[ 0 ] ) )
+		ret = atoi( align );
+	else if ( align[ 0 ] == 'c' || align[ 0 ] == 'm' )
+		ret = 1.0f;
+	else if ( align[ 0 ] == 'r' || align[ 0 ] == 'b' )
+		ret = 2.0f;
+
+	return ret;
+}
+
+static struct mlt_geometry_item_s get_geometry( mlt_profile profile, mlt_filter filter, mlt_frame frame )
+{
+	mlt_properties properties = MLT_FRAME_PROPERTIES( frame );
+	mlt_properties filter_props = MLT_FILTER_PROPERTIES( filter );
+	struct mlt_geometry_item_s item;
+	mlt_geometry geometry = (mlt_geometry) mlt_properties_get_data( filter_props, "geometry", NULL );
+	char *string = mlt_properties_get( properties, "resize.geometry" );
+	int length = mlt_filter_get_length2( filter, frame );
+
+	if ( !geometry ) {
+		geometry = mlt_geometry_init();
+		mlt_properties_set_data( filter_props, "geometry", geometry, 0,
+			(mlt_destructor) mlt_geometry_close, NULL );
+		mlt_geometry_parse( geometry, string, length, profile->width, profile->height );
+	} else {
+		mlt_geometry_refresh( geometry, string, length, profile->width, profile->height );
+	}
+
+	mlt_geometry_fetch( geometry, &item, mlt_filter_get_position( filter, frame ) );
+
+	if ( !mlt_properties_get_int( properties, "resize.fill" ) ) {
+		int x = mlt_properties_get_int( properties, "meta.media.width" );
+		item.w = item.w > x ? x : item.w;
+		x = mlt_properties_get_int( properties, "meta.media.height" );
+		item.h = item.h > x ? x : item.h;
+	}
+
+	return item;
+}
 
 static int get_image( mlt_frame frame, uint8_t **image, mlt_image_format *format, int *width, int *height, int writable )
 {
@@ -35,7 +80,7 @@ static int get_image( mlt_frame frame, uint8_t **image, mlt_image_format *format
 	mlt_profile profile = mlt_service_profile( MLT_FILTER_SERVICE( filter ) );
 
 	// Retrieve the aspect ratio
-	double aspect_ratio = mlt_deque_pop_back_double( MLT_FRAME_IMAGE_STACK( frame ) );
+	double aspect_ratio = mlt_frame_get_aspect_ratio( frame );
 	double consumer_aspect = mlt_profile_sar( profile );
 
 	// Correct Width/height if necessary
@@ -49,6 +94,16 @@ static int get_image( mlt_frame frame, uint8_t **image, mlt_image_format *format
 	int owidth = *width;
 	int oheight = *height;
 
+	// Use a geometry to compute position and size
+	struct mlt_geometry_item_s geometry_item;
+	geometry_item.x = geometry_item.y = 0.0f;
+	geometry_item.distort = 0;
+	if ( mlt_properties_get( properties, "resize.geometry" ) ) {
+		geometry_item = get_geometry( profile, filter, frame );
+		owidth = lrintf( geometry_item.w );
+		oheight = lrintf( geometry_item.h );
+	}
+
 	// Check for the special case - no aspect ratio means no problem :-)
 	if ( aspect_ratio == 0.0 )
 		aspect_ratio = consumer_aspect;
@@ -56,19 +111,13 @@ static int get_image( mlt_frame frame, uint8_t **image, mlt_image_format *format
 	// Reset the aspect ratio
 	mlt_properties_set_double( properties, "aspect_ratio", aspect_ratio );
 
-	// XXX: This is a hack, but it forces the force_full_luma to apply by doing a RGB
-	// conversion because range scaling only occurs on YUV->RGB. And we do it here,
-	// after the deinterlace filter, which only operates in YUV to avoid a YUV->RGB->YUV->?.
-	// Instead, it will go YUV->RGB->?.
-	if ( mlt_properties_get_int( properties, "force_full_luma" ) )
-		*format = mlt_image_rgb24a;
-
 	// Hmmm...
 	char *rescale = mlt_properties_get( properties, "rescale.interp" );
 	if ( rescale != NULL && !strcmp( rescale, "none" ) )
 		return mlt_frame_get_image( frame, image, format, width, height, writable );
 
-	if ( mlt_properties_get_int( properties, "distort" ) == 0 )
+	if ( mlt_properties_get_int( properties, "distort" ) == 0 &&
+	     geometry_item.distort == 0 )
 	{
 		// Normalise the input and out display aspect
 		int normalised_width = profile->width;
@@ -83,19 +132,19 @@ static int get_image( mlt_frame frame, uint8_t **image, mlt_image_format *format
 		double output_ar = consumer_aspect * owidth / oheight;
 		
 		// Optimised for the input_ar > output_ar case (e.g. widescreen on standard)
-		int scaled_width = rint( ( input_ar * normalised_width ) / output_ar );
+		int scaled_width = lrint( ( input_ar * normalised_width ) / output_ar );
 		int scaled_height = normalised_height;
 
 		// Now ensure that our images fit in the output frame
 		if ( scaled_width > normalised_width )
 		{
 			scaled_width = normalised_width;
-			scaled_height = rint( ( output_ar * normalised_height ) / input_ar );
+			scaled_height = lrint( ( output_ar * normalised_height ) / input_ar );
 		}
 
 		// Now calculate the actual image size that we want
-		owidth = rint( scaled_width * owidth / normalised_width );
-		oheight = rint( scaled_height * oheight / normalised_height );
+		owidth = lrint( scaled_width * owidth / normalised_width );
+		oheight = lrint( scaled_height * oheight / normalised_height );
 
  		mlt_log_debug( MLT_FILTER_SERVICE(filter),
 			"real %dx%d normalised %dx%d output %dx%d sar %f in-dar %f out-dar %f\n",
@@ -108,18 +157,29 @@ static int get_image( mlt_frame frame, uint8_t **image, mlt_image_format *format
 	mlt_properties_set_int( properties, "distort", 0 );
 
 	// Now get the image
-	if ( *format == mlt_image_yuv422 )
-		owidth -= owidth % 2;
 	*format = mlt_image_glsl;
 	error = mlt_frame_get_image( frame, image, format, &owidth, &oheight, writable );
+
+	// Offset the position according to alignment
+	float w = float( *width - owidth );
+	float h = float( *height - oheight );
+	if ( mlt_properties_get( properties, "resize.geometry" ) ) {
+		// default left if geometry supplied
+		geometry_item.x += w * alignment_parse( mlt_properties_get( properties, "resize.halign" ) ) / 2.0f;
+		geometry_item.y += h * alignment_parse( mlt_properties_get( properties, "resize.valign" ) ) / 2.0f;
+	} else {
+		// default center if no geometry
+		geometry_item.x = w * 0.5f;
+		geometry_item.y = h * 0.5f;
+	}
 
 	if ( !error ) {
 		Effect* effect = GlslManager::get_effect( filter, frame );
 		if ( effect ) {
 			bool ok = effect->set_int( "width", *width );
 			ok |= effect->set_int( "height", *height );
-			ok |= effect->set_float( "left", ( *width - owidth ) / 2 );
-			ok |= effect->set_float( "top", ( *height - oheight ) / 2 );
+			ok |= effect->set_float( "left", geometry_item.x );
+			ok |= effect->set_float( "top", geometry_item.y );
 			assert(ok);
 		}
 	}
@@ -129,17 +189,14 @@ static int get_image( mlt_frame frame, uint8_t **image, mlt_image_format *format
 
 static mlt_frame process( mlt_filter filter, mlt_frame frame )
 {
-	Effect* effect = GlslManager::get_effect( filter, frame );
-	if ( !effect )
-		GlslManager::add_effect( filter, frame, new PaddingEffect() );
-	mlt_deque_push_back_double( MLT_FRAME_IMAGE_STACK( frame ), mlt_frame_get_aspect_ratio( frame ) );
+	if ( !GlslManager::get_effect( filter, frame ) )
+		GlslManager::add_effect( filter, frame, new PaddingEffect );
 	mlt_frame_push_service( frame, filter );
 	mlt_frame_push_get_image( frame, get_image );
 	return frame;
 }
 
-extern "C" {
-
+extern "C"
 mlt_filter filter_movit_resize_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg )
 {
 	mlt_filter filter = NULL;
@@ -150,6 +207,4 @@ mlt_filter filter_movit_resize_init( mlt_profile profile, mlt_service_type type,
 		filter->process = process;
 	}
 	return filter;
-}
-
 }
