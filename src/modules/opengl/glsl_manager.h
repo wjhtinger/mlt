@@ -86,6 +86,7 @@ public:
 	static void reset_finalized(mlt_service);
 	static Effect* get_effect(mlt_filter, mlt_frame);
 	static Effect* add_effect(mlt_filter, mlt_frame, Effect*);
+	static Effect* add_effect(mlt_filter, mlt_frame, Effect*, Effect* input_b);
 	static void render(mlt_service, void *chain, GLuint fbo, int width, int height);
 
 private:

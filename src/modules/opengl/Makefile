@@ -18,6 +18,7 @@ CPPOBJS += filter_movit_diffusion.o
 CPPOBJS += filter_movit_glow.o
 CPPOBJS += filter_lift_gamma_gain.o
 CPPOBJS += filter_movit_mirror.o
+CPPOBJS += filter_movit_opacity.o
 CPPOBJS += filter_movit_resample.o
 CPPOBJS += filter_movit_resize.o
 CPPOBJS += filter_movit_saturation.o

@@ -252,6 +252,18 @@ Effect* GlslManager::add_effect( mlt_filter filter, mlt_frame frame, Effect* eff
 	return effect;
 }
 
+Effect* GlslManager::add_effect( mlt_filter filter, mlt_frame frame, Effect* effect, Effect* input_b )
+{
+	mlt_producer producer = mlt_producer_cut_parent( mlt_frame_get_original_producer( frame ) );
+	mlt_properties properties = MLT_PRODUCER_PROPERTIES( producer );
+	char *unique_id = mlt_properties_get( MLT_FILTER_PROPERTIES(filter), "_unique_id" );
+	EffectChain* chain = (EffectChain*) mlt_properties_get_data( properties, "movit chain", NULL );
+	chain->add_effect( effect, chain->last_added_effect(),
+		input_b? input_b : chain->last_added_effect() );
+	mlt_properties_set_data( properties, unique_id, effect, 0, NULL, NULL );
+	return effect;
+}
+
 void GlslManager::render( mlt_service service, void* chain, GLuint fbo, int width, int height )
 {
 	EffectChain* effect_chain = (EffectChain*) chain;
