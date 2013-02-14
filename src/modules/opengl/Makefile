@@ -29,19 +29,6 @@ CPPOBJS += mlt_movit_input.o
 CPPOBJS += transition_movit_mix.o
 CPPOBJS += transition_movit_overlay.o
 
-ifeq ($(targetos), MinGW)
-	CFLAGS  += -DGLEW_STATIC
-	LDFLAGS += -lglew32 -lopengl32
-else
-ifeq ($(targetos), Darwin)
-	CFLAGS += -FOpenGL
-	LDFLAGS += -framework OpenGL -lGLEW
-else
-	OBJS += consumer_xgl.o
-	LDFLAGS += -lpthread -lGL -lX11 -lGLEW
-endif
-endif
-
 CXXFLAGS += -Wno-deprecated $(CFLAGS)
 CXXFLAGS += `pkg-config --cflags movit 2> /dev/null`
 
@@ -50,6 +37,19 @@ CXXFLAGS += -DSHADERDIR=\"$(SHADERDIR)\"
 
 LDFLAGS += -L../../mlt++ -lmlt++
 LDFLAGS += `pkg-config --libs movit 2> /dev/null`
+
+ifeq ($(targetos), MinGW)
+	CFLAGS  += `pkg-config --cflags glew`
+	LDFLAGS += `pkg-config --libs-only-L glew`-lglew32 -lopengl32
+else
+ifeq ($(targetos), Darwin)
+	CFLAGS += -FOpenGL
+	LDFLAGS += -framework OpenGL
+else
+	OBJS += consumer_xgl.o
+	LDFLAGS += -lpthread -lGL -lX11
+endif
+endif
 
 SRCS := $(OBJS:.o=.c) $(CPPOBJS:.o=.cpp)
 
@@ -71,8 +71,6 @@ install: all
 	install -m 755 $(TARGET) "$(DESTDIR)$(libdir)/mlt"
 	install -d "$(DESTDIR)$(datadir)/mlt/opengl/movit"
 	install -m 644 *.yml "$(DESTDIR)$(datadir)/mlt/opengl"
-	install -m 644 movit/*.frag "$(DESTDIR)$(datadir)/mlt/opengl/movit"
-	install -m 644 movit/*.vert "$(DESTDIR)$(datadir)/mlt/opengl/movit"
 
 ifneq ($(wildcard .depend),)
 include .depend
