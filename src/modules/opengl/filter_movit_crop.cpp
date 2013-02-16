@@ -30,6 +30,7 @@ static int get_image( mlt_frame frame, uint8_t **image, mlt_image_format *format
 	mlt_properties properties = MLT_FRAME_PROPERTIES( frame );
 	mlt_filter filter = (mlt_filter) mlt_frame_pop_service( frame );
 	mlt_profile profile = mlt_service_profile( MLT_FILTER_SERVICE( filter ) );
+	mlt_image_format requested_format = *format;
 
 	// Correct width/height if necessary
 	*width = mlt_properties_get_int( properties, "crop.original_width" );
@@ -51,6 +52,10 @@ static int get_image( mlt_frame frame, uint8_t **image, mlt_image_format *format
 //	*format = (mlt_image_format) mlt_properties_get_int( MLT_PRODUCER_PROPERTIES(producer), "_movit image_format" );
 	*format = mlt_image_none;
 	error = mlt_frame_get_image( frame, image, format, width, height, writable );
+
+	// Skip processing if requested.
+	if ( requested_format == mlt_image_none )
+		return error;
 
 	if ( !error && *format != mlt_image_glsl && frame->convert_image ) {
 	// Pin the requested format to the first one returned.

@@ -61,7 +61,8 @@ static int get_image( mlt_frame frame, uint8_t **image, mlt_image_format *format
 		mlt_properties_set_int( properties, "consumer_deinterlace", 1 );
 
 	// Get the image as requested
-	*format = mlt_image_glsl;
+	if ( *format != mlt_image_none )
+		*format = mlt_image_glsl;
 	error = mlt_frame_get_image( frame, image, format, &iwidth, &iheight, writable );
 	if ( !error ) {
 		Effect* effect = GlslManager::get_effect( filter, frame );
