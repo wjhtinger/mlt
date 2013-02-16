@@ -38,6 +38,10 @@ extern "C" {
 #include <sys/syscall.h>
 #endif
 
+void deleteManager(GlslManager *p)
+{
+	delete p;
+}
 
 GlslManager::GlslManager()
 	: Mlt::Filter( mlt_filter_new() )
@@ -45,11 +49,10 @@ GlslManager::GlslManager()
 {
 	mlt_filter filter = get_filter();
 	if ( filter ) {
-		// Mlt::Filter() adds a reference that we do not need.
-		mlt_filter_close( filter );
 		// Set the mlt_filter child in case we choose to override virtual functions.
 		filter->child = this;
-		mlt_properties_set_data(mlt_global_properties(), "glslManager", this, 0, NULL, NULL);
+		mlt_properties_set_data(mlt_global_properties(), "glslManager", this, 0,
+			(mlt_destructor) deleteManager, NULL);
 
 		mlt_events_register( get_properties(), "init glsl", NULL );
 		listen("init glsl", this, (mlt_listener) GlslManager::onInit);
@@ -58,6 +61,7 @@ GlslManager::GlslManager()
 
 GlslManager::~GlslManager()
 {
+	mlt_log_debug(get_service(), "%s\n", __FUNCTION__);
 	while (fbo_list.peek_back())
 		delete (glsl_fbo) fbo_list.pop_back();
 	while (texture_list.peek_back())
