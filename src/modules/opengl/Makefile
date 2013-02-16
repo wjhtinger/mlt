@@ -36,14 +36,14 @@ SHADERDIR = `pkg-config --variable=shaderdir movit`
 CXXFLAGS += -DSHADERDIR=\"$(SHADERDIR)\"
 
 LDFLAGS += -L../../mlt++ -lmlt++
-LDFLAGS += `pkg-config --libs movit 2> /dev/null`
 
 ifeq ($(targetos), MinGW)
-	CFLAGS  += `pkg-config --cflags glew`
-	LDFLAGS += `pkg-config --libs-only-L glew`-lglew32 -lopengl32
+	CXXFLAGS += `pkg-config --cflags glew`
+	LDFLAGS += -lmovit `pkg-config --libs-only-L glew` -lglew32 -lopengl32
 else
+	LDFLAGS += `pkg-config --libs movit 2> /dev/null`
 ifeq ($(targetos), Darwin)
-	CFLAGS += -FOpenGL
+	CXXFLAGS += -FOpenGL
 	LDFLAGS += -framework OpenGL
 else
 	OBJS += consumer_xgl.o
