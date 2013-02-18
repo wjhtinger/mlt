@@ -193,7 +193,11 @@ extern "C" {
 
 mlt_filter filter_glsl_manager_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg )
 {
-	GlslManager* g = new GlslManager();
+	GlslManager* g = GlslManager::get_instance();
+	if (g)
+		g->inc_ref();
+	else
+		g = new GlslManager();
 	return g->get_filter();
 }
 
