@@ -278,10 +278,16 @@ static void load_consumer( mlt_consumer *consumer, mlt_profile profile, int argc
 	int qglsl = 0;
 
 	for ( i = 1; i < argc; i ++ ) {
+		// See if we need multi consumer.
 		multi += !strcmp( argv[i], "-consumer" );
+		// Seee if we need the qglsl variant of multi consumer.
 		if ( !strncmp( argv[i], "glsl.", 5 ) || !strncmp( argv[i], "movit.", 6 ) )
 			qglsl = 1;
 	}
+	// Disable qglsl if xgl is being used!
+	for ( i = 1; qglsl && i < argc; i ++ )
+		if ( !strcmp( argv[i], "xgl" ) )
+			qglsl = 0;
 
 	if ( multi > 1 || qglsl )
 	{
