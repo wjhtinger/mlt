@@ -275,11 +275,15 @@ static void load_consumer( mlt_consumer *consumer, mlt_profile profile, int argc
 {
 	int i;
 	int multi = 0;
+	int qglsl = 0;
 
-	for ( i = 1; i < argc; i ++ )
-		multi += !strcmp( argv[ i ], "-consumer" );
+	for ( i = 1; i < argc; i ++ ) {
+		multi += !strcmp( argv[i], "-consumer" );
+		if ( !strncmp( argv[i], "glsl.", 5 ) || !strncmp( argv[i], "movit.", 6 ) )
+			qglsl = 1;
+	}
 
-	if ( multi > 1 )
+	if ( multi > 1 || qglsl )
 	{
 		// If there is more than one -consumer use the 'multi' consumer.
 		int k = 0;
@@ -287,7 +291,7 @@ static void load_consumer( mlt_consumer *consumer, mlt_profile profile, int argc
 
 		if ( *consumer )
 			mlt_consumer_close( *consumer );
-		*consumer = create_consumer( profile, "multi" );
+		*consumer = create_consumer( profile, ( qglsl? "qglsl" : "multi" ) );
 		mlt_properties properties = MLT_CONSUMER_PROPERTIES( *consumer );
 		for ( i = 1; i < argc; i ++ )
 		{
