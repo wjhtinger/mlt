@@ -577,9 +577,6 @@ mlt_consumer consumer_xgl_init( mlt_profile profile, mlt_service_type type, cons
 		// default image format
 		mlt_properties_set( this->properties, "mlt_image_format", "glsl" );
 
-		// see README
-		mlt_properties_set_int( this->properties, "real_time", 0 );
-
 		// Default buffer for low latency
 		mlt_properties_set_int( this->properties, "buffer", 1 );
 
