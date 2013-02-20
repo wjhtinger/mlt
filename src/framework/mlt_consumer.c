@@ -1201,11 +1201,14 @@ void mlt_consumer_purge( mlt_consumer self )
 {
 	if ( self && self->ahead )
 	{
-		pthread_mutex_lock( &self->queue_mutex );
+		if ( self->ahead )
+			pthread_mutex_lock( &self->queue_mutex );
 		while ( mlt_deque_count( self->queue ) )
 			mlt_frame_close( mlt_deque_pop_back( self->queue ) );
-		pthread_cond_broadcast( &self->queue_cond );
-		pthread_mutex_unlock( &self->queue_mutex );
+		if ( self->ahead ) {
+			pthread_cond_broadcast( &self->queue_cond );
+			pthread_mutex_unlock( &self->queue_mutex );
+		}
 	}
 }
 
