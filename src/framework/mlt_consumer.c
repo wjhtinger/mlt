@@ -106,6 +106,7 @@ int mlt_consumer_init( mlt_consumer self, void *child, mlt_profile profile )
 		mlt_events_register( properties, "consumer-frame-show", ( mlt_transmitter )mlt_consumer_frame_show );
 		mlt_events_register( properties, "consumer-frame-render", ( mlt_transmitter )mlt_consumer_frame_render );
 		mlt_events_register( properties, "consumer-thread-started", NULL );
+		mlt_events_register( properties, "consumer-thread-stopped", NULL );
 		mlt_events_register( properties, "consumer-stopped", NULL );
 		mlt_events_listen( properties, self, "consumer-frame-show", ( mlt_listener )on_consumer_frame_show );
 
@@ -858,6 +859,7 @@ static void *consumer_read_ahead_thread( void *arg )
 
 	// Remove the last frame
 	mlt_frame_close( frame );
+	mlt_events_fire( properties, "consumer-thread-stopped" );
 
 	return NULL;
 }
@@ -971,6 +973,7 @@ static void *consumer_worker_thread( void *arg )
 		pthread_cond_broadcast( &self->done_cond );
 		pthread_mutex_unlock( &self->done_mutex );
 	}
+	mlt_events_fire( properties, "consumer-thread-stopped" );
 
 	return NULL;
 }
