@@ -38,7 +38,8 @@
 /* XXX matches __nop_locale glue in libc++ */
 typedef void* locale_t;
 #else
-typedef char* locale_t;
+//typedef char* locale_t;
+#  include <locale.h>
 #endif
 
 extern mlt_property mlt_property_init( );

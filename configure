@@ -91,8 +91,8 @@ build_config()
 			fi
 		fi
 
-		echo "CFLAGS+=-Wall -DPIC \$(TARGETARCH) \$(TARGETCPU) \$(OPTIMISATIONS) \$(MMX_FLAGS) \$(SSE_FLAGS) \$(SSE2_FLAGS) \$(DEBUG_FLAGS) \$(LARGE_FILE)"
-		echo "CXXFLAGS+=-Wall -DPIC \$(TARGETARCH) \$(TARGETCPU) \$(OPTIMISATIONS) \$(MMX_FLAGS) \$(SSE_FLAGS) \$(SSE2_FLAGS) \$(DEBUG_FLAGS) \$(LARGE_FILE)"
+		echo "CFLAGS+=-Wall -DPIC \$(TARGETARCH) \$(TARGETCPU) \$(OPTIMISATIONS) \$(MMX_FLAGS) \$(SSE_FLAGS) \$(SSE2_FLAGS) \$(DEBUG_FLAGS) \$(LARGE_FILE) --sysroot=/home/wangjh/work/video_edit/ffmpeg-android-wjhtinger2/toolchain-android/sysroot" 
+		echo "CXXFLAGS+=-Wall -DPIC \$(TARGETARCH) \$(TARGETCPU) \$(OPTIMISATIONS) \$(MMX_FLAGS) \$(SSE_FLAGS) \$(SSE2_FLAGS) \$(DEBUG_FLAGS) \$(LARGE_FILE) --sysroot=/home/wangjh/work/video_edit/ffmpeg-android-wjhtinger2/toolchain-android/sysroot"
 
 		case $targetos in
 		Darwin)
@@ -106,7 +106,7 @@ build_config()
 		echo "SHFLAGS=-shared"
 		echo "LIBDL=-ldl"
 		echo "RDYNAMIC=-rdynamic"
-		echo "LDFLAGS+=-Wl,--no-undefined -Wl,--as-needed"
+		echo "LDFLAGS+=-Wl,--no-undefined -Wl,--as-needed --sysroot=/home/wangjh/work/video_edit/ffmpeg-android-wjhtinger2/toolchain-android/sysroot"
 		;;
 		FreeBSD)
 		[ "$optimisations" = "true" ] &&
@@ -231,7 +231,7 @@ export melt_noversion=false
 export windeploy=true
 
 # Define the compiler used in tests (gcc is not installed everywhere)
-: ${CC:=gcc}
+#: ${CC:=gcc}
 
 # Test for a supported C++ compiler.
 if $($CC --version | grep -is -e gcc > /dev/null)

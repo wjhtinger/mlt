@@ -5,21 +5,17 @@ OBJS = melt.o \
 
 CFLAGS += -I.. $(RDYNAMIC) -DVERSION=\"$(version)\"
 
-LDFLAGS += -L../framework -lmlt -lpthread
+LDFLAGS += -L../framework -lmlt -pthread
 
 SRCS := $(OBJS:.o=.c)
 
 ifeq (, $(findstring MELT_NOSDL, $(CFLAGS)))
 ifeq (yes, $(shell pkg-config --exists sdl2 && echo yes))
-CFLAGS += -DHAVE_SDL2
-CFLAGS  += $(shell pkg-config --cflags sdl2)
-LDFLAGS += $(shell pkg-config --libs sdl2)
+
 else ifeq (yes, $(shell pkg-config --exists sdl && echo yes))
-CFLAGS  += $(shell pkg-config --cflags sdl)
-LDFLAGS += $(shell pkg-config --libs sdl)
+
 else
-CFLAGS  += $(shell sdl-config --cflags)
-LDFLAGS += $(shell sdl-config --libs)
+
 endif
 endif
 

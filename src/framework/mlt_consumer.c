@@ -1193,7 +1193,7 @@ static void consumer_work_start( mlt_consumer self )
 		pthread_attr_init( &thread_attributes );
 		pthread_attr_setschedpolicy( &thread_attributes, SCHED_OTHER );
 		pthread_attr_setschedparam( &thread_attributes, &priority );
-		pthread_attr_setinheritsched( &thread_attributes, PTHREAD_EXPLICIT_SCHED );
+		//pthread_attr_setinheritsched( &thread_attributes, PTHREAD_EXPLICIT_SCHED );
 		pthread_attr_setscope( &thread_attributes, PTHREAD_SCOPE_SYSTEM );
 
 		while ( n-- )
@@ -1781,7 +1781,7 @@ static void mlt_thread_create( mlt_consumer self, thread_function_t function )
 			pthread_attr_init( &thread_attributes );
 			pthread_attr_setschedpolicy( &thread_attributes, SCHED_OTHER );
 			pthread_attr_setschedparam( &thread_attributes, &priority );
-			pthread_attr_setinheritsched( &thread_attributes, PTHREAD_EXPLICIT_SCHED );
+			//pthread_attr_setinheritsched( &thread_attributes, PTHREAD_EXPLICIT_SCHED );
 			pthread_attr_setscope( &thread_attributes, PTHREAD_SCOPE_SYSTEM );
 			priv->ahead_thread = malloc( sizeof( pthread_t ) );
 			pthread_t *handle = priv->ahead_thread;
