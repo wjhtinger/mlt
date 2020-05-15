@@ -8,7 +8,7 @@ SUBDIRS = src/framework \
 all clean:
 	list='$(SUBDIRS)'; \
 	for subdir in $$list; do \
-		$(MAKE) -s -C $$subdir depend || exit 1; \
+		$(MAKE) -C $$subdir depend || exit 1; \
 		$(MAKE) -C $$subdir $@ || exit 1; \
 	done
 
