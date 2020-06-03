@@ -23,6 +23,7 @@
 
 extern mlt_consumer consumer_multi_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
 extern mlt_consumer consumer_null_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
+extern mlt_consumer consumer_socket_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
 extern mlt_filter filter_audiochannels_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
 extern mlt_filter filter_audioconvert_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
 extern mlt_filter filter_audiomap_init( mlt_profile profile, mlt_service_type type, const char *id, char *arg );
@@ -74,6 +75,7 @@ MLT_REPOSITORY
 {
 	MLT_REGISTER( consumer_type, "multi", consumer_multi_init );
 	MLT_REGISTER( consumer_type, "null", consumer_null_init );
+	MLT_REGISTER( consumer_type, "socket", consumer_socket_init );
 	MLT_REGISTER( filter_type, "audiochannels", filter_audiochannels_init );
 	MLT_REGISTER( filter_type, "audioconvert", filter_audioconvert_init );
 	MLT_REGISTER( filter_type, "audiomap", filter_audiomap_init );
