@@ -46,7 +46,9 @@ OBJS = factory.o \
 	   transition_region.o \
 	   transition_matte.o \
 	   consumer_multi.o \
-	   consumer_null.o
+	   consumer_null.o \
+	   consumer_socket.o \
+	   consumer_android.o
 
 ifdef SSE2_FLAGS
 ifdef ARCH_X86_64

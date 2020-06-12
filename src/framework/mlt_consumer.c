@@ -1820,3 +1820,36 @@ static void mlt_thread_join( mlt_consumer self )
 	}
 	priv->ahead_thread = NULL;
 }
+
+
+
+static CONSUMER_RENDER  p_render = NULL;
+static mlt_image_format image_format = mlt_image_none;
+static int width = 0, height = 0;
+
+void mlt_consumer_render_set(CONSUMER_RENDER p, mlt_image_format f, int w, int h)
+{	
+	p_render = p;
+	image_format = f;
+	width  = w;
+	height = h;
+}
+
+
+void mlt_consumer_render_get(CONSUMER_RENDER *p, mlt_image_format *f, int *w, int *h)
+{	
+	*p = p_render;
+	*f = image_format;
+	*w = width;
+	*h = height;
+}
+
+
+void mlt_consumer_render_clear(void)
+{	
+	p_render = NULL;
+	image_format = mlt_image_none;
+	width  = 0;
+	height = 0;
+}
+

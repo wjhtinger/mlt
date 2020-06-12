@@ -126,6 +126,8 @@ struct mlt_consumer_s
 	void *child; /**< \private the object of a subclass */
 };
 
+typedef void (*CONSUMER_RENDER)(uint8_t *, int, mlt_image_format, int, int);
+
 #define MLT_CONSUMER_SERVICE( consumer )	( &( consumer )->parent )
 #define MLT_CONSUMER_PROPERTIES( consumer )	MLT_SERVICE_PROPERTIES( MLT_CONSUMER_SERVICE( consumer ) )
 
@@ -144,5 +146,11 @@ extern int mlt_consumer_is_stopped( mlt_consumer self );
 extern void mlt_consumer_stopped( mlt_consumer self );
 extern void mlt_consumer_close( mlt_consumer );
 extern mlt_position mlt_consumer_position( mlt_consumer );
+
+
+extern void mlt_consumer_render_set(CONSUMER_RENDER p, mlt_image_format f, int w, int h);
+extern void mlt_consumer_render_get(CONSUMER_RENDER *p, mlt_image_format *f, int *w, int *h);
+extern void mlt_consumer_render_clear(void);
+
 
 #endif
