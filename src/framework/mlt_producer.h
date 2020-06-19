@@ -127,5 +127,7 @@ extern int mlt_producer_optimise( mlt_producer self );
 extern void mlt_producer_close( mlt_producer self );
 int64_t mlt_producer_get_creation_time( mlt_producer self );
 void mlt_producer_set_creation_time( mlt_producer self, int64_t creation_time );
+int mlt_av_jni_set_java_vm(void *vm, void *log_ctx);
+int mlt_av_jni_get_java_vm(void **vm, void **log_ctx);
 
 #endif

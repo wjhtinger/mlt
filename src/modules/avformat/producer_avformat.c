@@ -50,6 +50,8 @@
 #include <libavfilter/buffersrc.h>
 #endif
 
+#include <libavcodec/jni.h>
+
 // System header files
 #include <stdlib.h>
 #include <string.h>
@@ -166,6 +168,11 @@ mlt_producer producer_avformat_init( mlt_profile profile, const char *service, c
 {
 	if ( list_components( file ) )
 		return NULL;
+
+	void *vm;
+	void *log_ctx;
+	mlt_av_jni_get_java_vm(&vm, &log_ctx);
+	av_jni_set_java_vm(vm, 0);
 
 	mlt_producer producer = NULL;
 
@@ -2089,7 +2096,11 @@ static int video_codec_init( producer_avformat self, int index, mlt_properties p
 		} else if ( codec_context->codec_id == AV_CODEC_ID_VP8 ) {
 			if ( !( codec = avcodec_find_decoder_by_name( "libvpx" ) ) )
 				codec = avcodec_find_decoder( codec_context->codec_id );
-		}
+		}else if ( codec_context->codec_id == AV_CODEC_ID_H264 ) {
+			if ( !( codec = avcodec_find_decoder_by_name( "h264_mediacodec" ) ) )
+				codec = codec;
+				//codec = avcodec_find_decoder( codec_context->codec_id );
+		}		
 #ifdef VDPAU
 		if ( codec_context->codec_id == AV_CODEC_ID_H264 )
 		{
@@ -2116,7 +2127,12 @@ static int video_codec_init( producer_avformat self, int index, mlt_properties p
 
 		// If we don't have a codec and we can't initialise it, we can't do much more...
 		pthread_mutex_lock( &self->open_mutex );
-		if ( codec && avcodec_open2( codec_context, codec, NULL ) >= 0 )
+
+		//avcodec_parameters_to_context(codec_context, stream->codecpar);
+		
+		int ret = avcodec_open2( codec_context, codec, NULL );
+		mlt_log_error( MLT_CONSUMER_SERVICE(self), "######################avcodec_open2  [%p][%d]", codec, ret);
+		if ( codec &&  ret >= 0 )
 		{
 			// Switch to the native vp8/vp9 decoder if not yuva420p
 			if ( codec_context->pix_fmt != AV_PIX_FMT_YUVA420P

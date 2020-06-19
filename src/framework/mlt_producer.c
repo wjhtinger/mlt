@@ -1271,3 +1271,20 @@ void mlt_producer_set_creation_time( mlt_producer self, int64_t creation_time )
 	mlt_properties_set( MLT_PRODUCER_PROPERTIES( parent ), "creation_time", datestr);
 	free( datestr );
 }
+
+
+void *g_vm;
+void *g_log_ctx;
+int mlt_av_jni_set_java_vm(void *vm, void *log_ctx)
+{
+	g_vm = vm;
+    g_log_ctx = log_ctx;
+}
+
+
+int mlt_av_jni_get_java_vm(void **vm, void **log_ctx)
+{
+	*vm = g_vm;
+    *log_ctx = g_log_ctx;
+}
+
